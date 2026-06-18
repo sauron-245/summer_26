@@ -48,3 +48,24 @@ P1 = combine_df("P1_1", "P1_2") # Adjust names as needed.
 #  May produce warnings -- these are likely due to inconsistencies in column format that we addressed by slicing out the 1st row of each dataframe.
 
 write.csv(P1, file = "wells_merge/P1_all.csv")
+
+update_well_log = function(well) {
+  log_standing <- read_csv(paste0("wells_running/", well, "_current.csv"))
+  
+  log_new <- read_excel(paste0("wells_upload/", "P1", ".xlsx")) %>% 
+    rename_with(~ sub("\\(.*$", "", .x)) 
+  
+  date_current_last = as_datetime(log_standing[[nrow(log_standing),2]])
+  date_new = as_datetime(log_new[[nrow(log_new), 2]])
+  
+  if (date_current_last == date_new) {
+    stop("Most recent date of running log data matches last date on added data. Have you already merged these dataframes?")
+  }
+  
+  data_to_add = log_new %>% 
+    filter(`Date-Time ` > date_current_last)
+}
+
+
+data_to_add = log_new %>% 
+  filter(`Date-Time ` > date_current_last)
