@@ -1,13 +1,19 @@
-############################
-# To use:
-# 1. drop .xlsx files of interest into 'wells_merge' folder
-# 2. in last line of code, rename "df1" and "df2" to the names of your .xlsx files
-# 3. Within function definition, adjust date formatting to ensure read_excel treats
-#    dates as appropriate. This was a major issue in developing this script -- dates are 
-#    formatted inconsistently between HOBO sensors. 
-# 4. Run all code. Merged data will be written to a .csv located in the 'wells_merge' folder.
-###########################
-
+####################################################################################
+##### Instructions: #####                                                          #
+# 1. Download all new data from HOBO loggers as .xlsx files                        #
+# 2. Drop files into folder 'wells_upload'                                         #
+# 3. Rename all files using the following conventions:                             #
+#     a. piezometers: well name alone (e.g. 'P3')                                  #
+#     b. creek temp monitors: well name plus '_creek' (e.g. P5_creek)              # 
+#     c. creek conductivity monitors: same as temp plus _cond (e.g. P5_creek_cond) #
+# 4. In body of script, add all filenames in 'wells_upload' to the 'wells_week'    #  
+#    vector in quotation marks (e.g. wells_week = c("P1", "P3", "P5_creek"))       #
+# 5. Run all lines of code. If you encounter errors, I suggest calling the         #
+#    update_well_log() function on each file in order to determine which one is    # 
+#    causing issues. It may be that one or more files are already up to date.      # 
+# 6. Once code has run without issue, delete all files in 'wells_upload'.          #
+##### Good luck! #####                                                             #    
+####################################################################################
 
 # install.packages("tidyverse")
 # install.packages("lubridate") # Comment in if packages have not been installed
@@ -17,55 +23,31 @@ library(lubridate)
 library(readxl)
 
 
-combine_df = function(xl1, xl2){
-  df1 <- read_excel(paste0("wells_merge/", xl1, ".xlsx"),
-                    range = cell_cols("A:G"),
-                    col_names = c("obs", "Date-Time", "Temp", "Conductivity", "SPC", "Salinity", "TDS"),
-                    col_types = c("numeric", "text", "numeric", "numeric", "numeric", "numeric", "numeric")) %>% 
-    slice(-1)  %>% # Removes headers, which are transformed into a row after specifying col_names.
-    mutate(
-      `Date-Time` = parse_date_time(`Date-Time`,
-        orders = c("mdy HMS", "mdy HM", "ymd HMS", "ymd HM"))) 
-  # Date formatting should be addressed on a dataframe-by-dataframe basis
-    
+update_well_log = function(site) {
+  log_standing <- read_csv(paste0("wells_running/", site, "_current.csv")) # Running total of log data
+  
+  log_new <- read_excel(paste0("wells_upload/", site, ".xlsx")) %>%  # Most recently downloaded data
+    rename_with(~ trimws(sub("\\(.*$", "", .x))) %>% # Correctly format column names and get rid of 1st column
+    select(-1)
+  
+  date_current_last = as_datetime(log_standing[[nrow(log_standing),1]])
+  date_new = as_datetime(log_new[[nrow(log_new),1]])
 
-  df2 <- read_excel(paste0("wells_merge/", xl2, ".xlsx"),
-                    range = cell_cols("A:G"),
-                    col_names = c("obs", "Date-Time", "Temp", "Conductivity", "SPC", "Salinity", "TDS"),
-                    col_types = c("numeric", "date", "numeric", "numeric", "numeric", "numeric", "numeric")) %>% 
-    slice(-1)  
-    
-
-  
-  if (ncol(df1) != ncol(df2)) {
-    stop("Column counts do not match — cannot rbind.")
-  }
-  
-  df_new <- rbind(df1, df2)
-  
-}
-P1 = combine_df("P1_1", "P1_2") # Adjust names as needed.
-#  May produce warnings -- these are likely due to inconsistencies in column format that we addressed by slicing out the 1st row of each dataframe.
-
-write.csv(P1, file = "wells_merge/P1_all.csv")
-
-update_well_log = function(well) {
-  log_standing <- read_csv(paste0("wells_running/", well, "_current.csv"))
-  
-  log_new <- read_excel(paste0("wells_upload/", "P1", ".xlsx")) %>% 
-    rename_with(~ sub("\\(.*$", "", .x)) 
-  
-  date_current_last = as_datetime(log_standing[[nrow(log_standing),2]])
-  date_new = as_datetime(log_new[[nrow(log_new), 2]])
-  
-  if (date_current_last == date_new) {
+  if (date_current_last == date_new) { # Checks if running log data are already up to date
     stop("Most recent date of running log data matches last date on added data. Have you already merged these dataframes?")
-  }
-  
-  data_to_add = log_new %>% 
-    filter(`Date-Time ` > date_current_last)
+  } 
+
+  data_to_add = log_new %>%
+    filter(`Date-Time` > date_current_last) # selects only data not present in running logs
+
+  log_standing_updated = rbind(log_standing, data_to_add)
+  write_csv(log_standing_updated, paste0("wells_running/", site, "_current.csv")) # Adds new data and overwrites existing. csv
+}
+
+wells_week = c()
+for (well in wells_week) {
+  update_well_log(well)
 }
 
 
-data_to_add = log_new %>% 
-  filter(`Date-Time ` > date_current_last)
+
