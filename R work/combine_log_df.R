@@ -12,7 +12,6 @@
 #    update_hobo_log() function on each file in order to determine which one is    # 
 #    causing issues. It may be that one or more files are already up to date.      # 
 # 6. Once code has run without issue, delete all files in 'hobos_upload'.          #
-##### Good luck! #####                                                             #    
 ####################################################################################
 
 # install.packages("tidyverse")
@@ -25,13 +24,15 @@ library(readxl)
 
 update_hobo_log = function(site) {
   cols_to_check = c("Date-Time", "Temperature", "Electrical Conductivity", "Specific Conductivity", "Salinity", "Total Dissolved Solids")
-  log_standing <- read_csv(paste0("hobos_running/", site, "_current.csv")) # Running total of log data
   
+  log_standing <- read_csv(paste0("hobos_running/", site, "_current.csv")) # Running total of log data
   log_new <- read_excel(paste0("hobos_upload/", site, ".xlsx")) %>%  # Most recently downloaded data
     rename_with(~ trimws(sub("\\(.*$", "", .x))) %>% # Correctly format column names and get rid of metadata columns
     select(any_of(cols_to_check))
   
-  
+  if (length(names(log_new)) == 0) {
+    stop(paste0("Check column names/format at site ", site, "."))
+  }
   
   date_current_last = as_datetime(log_standing[[nrow(log_standing),1]])
   date_new = as_datetime(log_new[[nrow(log_new),1]])
@@ -44,14 +45,10 @@ update_hobo_log = function(site) {
     filter(`Date-Time` > date_current_last) # selects only data not present in running logs
 
   log_standing_updated = rbind(log_standing, data_to_add)
-  write_csv(log_standing_updated, paste0("hobos_running/", site, "_current.csv")) # Adds new data and overwrites existing. csv
+  write_csv(log_standing_updated, paste0("hobos_running/", site, "_current.csv")) # Adds new data and overwrites existing .csv
 }
 
 hobos_week = c()
 for (hobo in hobos_week) {
   update_hobo_log(hobo)
 }
-
-
-
-
