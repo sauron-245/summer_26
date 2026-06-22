@@ -69,13 +69,3 @@ check_csv = function(site) {
 
 
 check_csv("P2_creek")
-p2_missing = read_csv("p2_missing.csv") %>% 
-  rename_with(~ trimws(sub("\\(.*$", "", .x))) %>% # Correctly format column names and get rid of metadata columns
-  select(any_of(cols_to_check))
-p2 = read_csv("hobos_running/P2_creek_current.csv")
-p2_missing$`Date-Time` = mdy_hms(p2_missing$`Date-Time`)
-p2_update = p2 %>% full_join(p2_missing, by = c("Date-Time", "Temperature")) %>% arrange(`Date-Time`)
-p2_update = p2_update[10:nrow(p2_update),]
-ggplot(p2_update, aes(x = `Date-Time`, y = Temperature)) +
-  geom_line()
-write_csv(p2_update, "hobos_running/P2_creek_current.csv")
