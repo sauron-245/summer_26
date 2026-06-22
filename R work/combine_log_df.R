@@ -22,6 +22,7 @@
 library(tidyverse)
 library(lubridate)
 library(readxl)
+library(ggplot2)
 
 hobos_all = c("Dwnstrm", "P1", "P1_creek", "P2", "P2_creek", "P3", "P4", "P4_creek", "P5", "P5_creek", "P5_creeK_cond")
 
@@ -57,3 +58,24 @@ for (hobo in hobos_week) {
 }
 
 # By default, the above for loop updates all running hobo data. In order to target updates to specific files, replace 'hobos_all' with a vector containing just the sites of interest (e.g. c("P1", "P3", "P5_creek")).
+
+check_csv = function(site) {
+  file = read_csv(paste0("hobos_running/", site, "_current.csv"))
+  file %>% 
+    ggplot(aes(x = `Date-Time`, y = Temperature)) +
+    geom_line() + 
+    labs(title = paste0("Temperature at ", site))
+  }
+
+
+check_csv("P2_creek")
+p2_missing = read_csv("p2_missing.csv") %>% 
+  rename_with(~ trimws(sub("\\(.*$", "", .x))) %>% # Correctly format column names and get rid of metadata columns
+  select(any_of(cols_to_check))
+p2 = read_csv("hobos_running/P2_creek_current.csv")
+p2_missing$`Date-Time` = mdy_hms(p2_missing$`Date-Time`)
+p2_update = p2 %>% full_join(p2_missing, by = c("Date-Time", "Temperature")) %>% arrange(`Date-Time`)
+p2_update = p2_update[10:nrow(p2_update),]
+ggplot(p2_update, aes(x = `Date-Time`, y = Temperature)) +
+  geom_line()
+write_csv(p2_update, "hobos_running/P2_creek_current.csv")
