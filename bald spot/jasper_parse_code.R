@@ -23,62 +23,38 @@ length(strsplit(trimws(first_row), ",")[[1]])
 
 # =============================================================================
 #  Bald Spot DTS  —  XML  ->  one CSV per channel
-# =============================================================================
-#  WHAT THIS DOES (plain English):
-#  Looks in a folder full of WITSML .xml files (one measurement each).
-#  Opens every file, pulls out the data table inside, stamps each row with
-#  the channel number and the timestamp from that file, and stacks them all
-#  up. At the end it writes ONE csv per channel (channel_0.csv, channel_1.csv,
-#  etc.) into an output folder.
-#
+
 #  HOW TO USE:
-#  1. Set INPUT_DIR below to the folder that has your .xml files.
+#  1. Set INPUT_DIR below to the folder that has  .xml files.
 #  2. Set OUTPUT_DIR to where you want the finished CSVs to land.
 #  3. Hit "Source" in RStudio (top-right of the editor), or run it line by line.
 #  4. Watch the messages in the console. Walk away. Come back to CSVs.
 # =============================================================================
 
 
-# ---- 0. SETTINGS YOU EDIT ---------------------------------------------------
 
-# Folder containing your .xml files. The "~" means your home folder.
-# Example matches where your samples were:
+#folder containing .xml files
 INPUT_DIR  <- "~/Desktop/summer_26/bald spot/sample_xml"
 
-# Folder where the finished CSVs get written. It will be created if missing.
+#folder where the finished CSVs get written. It will be created if missing.
 OUTPUT_DIR <- "~/Desktop/summer_26/bald spot/csv_output"
 
-# The column names, IN ORDER, as they appear in each <data> row.
-# We confirmed this from your files. If a future file has different curves,
-# the script auto-reads them from the file header instead (see below), so
-# this is just a fallback / sanity reference.
+# The column names, IN ORDER, as they appear in each <data> row
 EXPECTED_COLS <- c("LAF", "ST", "AST", "REV-ST", "REV-AST", "TMP")
 
 
-# ---- 1. SETUP ---------------------------------------------------------------
-
-# xml2 is the package that reads XML. Install once if you don't have it.
-if (!requireNamespace("xml2", quietly = TRUE)) {
-  install.packages("xml2")
-}
 library(xml2)
 
-# Make the output folder if it doesn't exist yet.
+#make the output folder if it doesn't exist yet.
 if (!dir.exists(OUTPUT_DIR)) {
   dir.create(OUTPUT_DIR, recursive = TRUE)
 }
 
 
-# ---- 2. THE FUNCTION THAT READS ONE FILE ------------------------------------
-# Given one .xml file path, returns a data.frame: one row per fiber point,
-# with the data columns plus channel / datetime / source_file stamped on.
-# If anything goes wrong with a file, it returns NULL (and we skip it) so one
-# bad file doesn't kill the whole overnight run.
-
+##fxn that reads one file
 parse_one_xml <- function(path) {
   
-  # read_xml opens the file. xml_ns_strip removes the "namespace" gunk
-  # (the xmlns="http://www.witsml.org/..." stuff) so our searches are simple.
+  #read_xml opens the file. xml_ns_strip removes the "namespace" gunk
   d <- tryCatch(xml_ns_strip(read_xml(path)),
                 error = function(e) NULL)
   if (is.null(d)) {
@@ -86,32 +62,28 @@ parse_one_xml <- function(path) {
     return(NULL)
   }
   
-  # --- channel number ---
-  # It's buried in the <name> text, e.g. "...channel:0 double ended."
-  # We grab the digits right after "channel:".
+  #buried in the <name> text
+  #grab the digits right after "channel:"
   logname <- xml_text(xml_find_first(d, "//log/name"))
   channel <- sub(".*channel:\\s*([0-9]+).*", "\\1", logname)
-  # If that pattern didn't match, channel will just equal the whole name;
-  # mark it unknown so it's obvious rather than silently wrong.
+  #if that pattern didn't match, channel will just equal the whole name;
+  #mark it unknown so it's obvious rather than silently wrong.
   if (channel == logname) channel <- "unknown"
   
-  # --- timestamp ---
-  # startDateTimeIndex is the time the measurement began, e.g.
-  # 2025-10-26T14:19:22.346Z . We keep it as-is (text), which is unambiguous.
+  #timestamp
+  #startDateTimeIndex is the time the measurement began
   t_start <- xml_text(xml_find_first(d, "//startDateTimeIndex"))
   t_end   <- xml_text(xml_find_first(d, "//endDateTimeIndex"))
   
-  # --- column names, read straight from THIS file's header ---
-  # We pull the <mnemonic> out of each <logCurveInfo>. This means if some
-  # files have a different set of curves, we still label them correctly.
+  #column names
+  #pull the <mnemonic> out of each <logCurveInfo>
   curves <- xml_find_all(d, "//logCurveInfo")
   col_names <- vapply(curves,
                       function(x) xml_text(xml_find_first(x, ".//mnemonic")),
                       character(1))
   
-  # --- the actual numbers ---
-  # Each <data> tag holds one comma-separated row, e.g.
-  # "-216.334,0.0105006,-0.0574207,0.213524,-0.127084,223.723"
+  #the actual numbers 
+  #each <data> tag holds one comma-separated row
   data_nodes <- xml_find_all(d, "//data")
   if (length(data_nodes) == 0) {
     warning("No <data> rows in: ", basename(path))
@@ -120,7 +92,7 @@ parse_one_xml <- function(path) {
   raw <- trimws(xml_text(data_nodes))               # one string per row
   split_rows <- strsplit(raw, ",")                  # split each on commas
   
-  # Turn the list of split strings into a numeric matrix.
+  #turn the list of split strings into a numeric matrix.
   m <- tryCatch(
     do.call(rbind, lapply(split_rows, as.numeric)),
     warning = function(w) NULL,   # non-numeric junk -> bail on this file
@@ -131,18 +103,17 @@ parse_one_xml <- function(path) {
     return(NULL)
   }
   
-  # Safety check: do the number of columns of data match the number of names?
+  #safety check: do the number of columns of data match the number of names?
   if (ncol(m) != length(col_names)) {
     warning("Column count mismatch in ", basename(path),
             " (", ncol(m), " values vs ", length(col_names), " names)")
-    # Fall back to generic names so we still capture the data.
     col_names <- paste0("V", seq_len(ncol(m)))
   }
   
   df <- as.data.frame(m, stringsAsFactors = FALSE)
   names(df) <- col_names
   
-  # Stamp every row with where/when it came from.
+  #stamp every row with where/when it came from.
   df$channel     <- channel
   df$start_time  <- t_start
   df$end_time    <- t_end
@@ -152,8 +123,7 @@ parse_one_xml <- function(path) {
 }
 
 
-# ---- 3. FIND ALL THE FILES --------------------------------------------------
-
+##find all the files
 xml_files <- list.files(INPUT_DIR, pattern = "\\.xml$",
                         full.names = TRUE, ignore.case = TRUE)
 
@@ -163,16 +133,14 @@ if (length(xml_files) == 0) {
 }
 
 
-# ---- 4. LOOP OVER EVERY FILE ------------------------------------------------
-# We collect each file's data.frame into a list, then combine per channel.
-# A counter + occasional message lets you see progress during a long run.
+##loop over every file
 
 all_rows <- vector("list", length(xml_files))
 
 for (i in seq_along(xml_files)) {
   all_rows[[i]] <- parse_one_xml(xml_files[i])
   
-  # ping every 25 files (and on the very last one)
+  #ping every 25 files (and on the very last one)
   if (i %% 25 == 0 || i == length(xml_files)) {
     message("  processed ", i, " / ", length(xml_files), " files")
   }
@@ -294,21 +262,10 @@ p3 <- ggplot(df_bored, aes(x = TMP, y = depth_proxy,
 print(p3)
 
 
-####LOOKING FOR XML FILE LOCATIONS 
-library(DBI); library(RPostgres)
-con <- dbConnect(RPostgres::Postgres(),
-                 dbname="dts_db", host="dts.physics.carleton.edu", port="5432",
-                 user="dts_user_ro", password="$$N0th1ng5p3c14l$$")
-
-dbListTables(con)
-
-dbListFields(con, "measurement") 
-dbListFields(con, "dts_config")
-dbListFields(con, "dts_data")
 
 
 
-install.packages("googledrive")
+##Google drive to .csv
 library(googledrive)
 #need to run this to give R access to your drive
 drive_auth()   
@@ -318,7 +275,9 @@ print(shared, n = 50)
 
 folder <- drive_get(as_id("12tkE_ITIb1XxKthTA4BVB965zs5w4sTe"))
 
-folder <- drive_get(as_id("12tkE_ITIb1XxKthTA4BVB965zs5w4sTe"))
-files <- drive_ls(folder, pattern = "\\.xml$")
+files <- drive_find(
+  q = "'12tkE_ITIb1XxKthTA4BVB965zs5w4sTe' in parents",
+  corpus = "allDrives"
+)
 nrow(files)
-
+files
