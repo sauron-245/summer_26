@@ -29,12 +29,14 @@ hobos_all = c("Dwnstrm", "P1", "P1_creek", "P2", "P2_creek", "P3", "P4", "P4_cre
 update_hobo_log = function(site) {
   cols_to_check = c("Date-Time", "Temperature", "Temperature , °C", "Electrical Conductivity", "Specific Conductivity", "Salinity", "Total Dissolved Solids")
   
-  log_standing <- read_csv(paste0("hobos_running/", site, "_current.csv")) # Running total of log data
+  log_standing <- read_csv(paste0("hobos_running/", site, "_current.csv")) %>% # Running total of log data
+    mutate(`Date-Time` = as.character(`Date-Time`))
   log_new <- read_excel(paste0("hobos_upload/", site, ".xlsx")) %>%  # Most recently downloaded data
     rename_with(~ trimws(sub("\\(.*$", "", .x))) %>% # Correctly format column names and get rid of metadata columns
-    select(any_of(cols_to_check)) # References list of columns of interest and selects just columns containing real data, removing metadata/empty columns
+    select(any_of(cols_to_check)) %>%  # References list of columns of interest and selects just columns containing real data, removing metadata/empty columns
+    mutate(`Date-Time` = as.character(`Date-Time`))
   
-  if (length(names(log_new)) != c(2, 6)) {
+  if (length(names(log_new)) == 0) {
     stop(paste0("Check column names/format at site ", site, ".")) # This will hopefully catch issues caused by mismatched column names between the running .csv and newly uploaded data
   }
   
@@ -50,8 +52,8 @@ update_hobo_log = function(site) {
   } 
 
   data_to_add = log_new %>%
-    filter(`Date-Time` > date_current_last) # selects only data not present in running logs
-  
+    filter(`Date-Time` > date_current_last) %>% # selects only data not present in running logs
+    filter(Temperature > 0)
   log_standing_updated = rbind(log_standing, data_to_add)
   write_csv(log_standing_updated, paste0("hobos_running/", site, "_current.csv")) # Adds new data and overwrites existing .csv
 }
@@ -72,3 +74,4 @@ check_csv = function(site) { # Use this to make graphs of temperature over time.
   }
 
 check_csv("Dwnstrm")
+
