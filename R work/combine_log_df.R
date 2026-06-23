@@ -24,7 +24,7 @@ library(lubridate)
 library(readxl)
 library(ggplot2)
 
-hobos_all = c("Dwnstrm", "P1", "P1_creek", "P2", "P2_creek", "P3", "P4", "P4_creek", "P5", "P5_creek", "P5_creeK_cond")
+hobos_all = c("Dwnstrm", "P1", "P1_creek", "P2", "P2_creek", "P3", "P4", "P4_creek", "P5", "P5_creek", "P5_creek_cond")
 
 update_hobo_log = function(site) {
   cols_to_check = c("Date-Time", "Temperature", "Temperature , °C", "Electrical Conductivity", "Specific Conductivity", "Salinity", "Total Dissolved Solids")
@@ -66,12 +66,14 @@ for (hobo in hobos_week) {
 # By default, the above for loop updates all running hobo data. In order to target updates to specific files, replace 'hobos_all' with a vector containing just the sites of interest (e.g. c("P1", "P3", "P5_creek")).
 
 check_csv = function(site) { # Use this to make graphs of temperature over time. Intended to check that dates/expected data gaps are behaving as they ought. 
-  file = read_csv(paste0("hobos_running/", site, "_current.csv"))
-  file %>% 
-    ggplot(aes(x = `Date-Time`, y = Temperature)) +
+  file = read_csv(paste0("hobos_running/", site, "_current.csv")) 
+  p = file %>% 
+  ggplot(aes(x = `Date-Time`, y = Temperature)) +
     geom_line() + 
     labs(title = paste0("Temperature at ", site, " from ", min(file$`Date-Time`), " to ", max(file$`Date-Time`)))
+  print(p)
   }
 
-check_csv("Dwnstrm")
-
+for (hobo in hobos_week) {
+  check_csv(hobo)
+}
