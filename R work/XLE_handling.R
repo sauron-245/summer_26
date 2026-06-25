@@ -21,7 +21,7 @@ handle_xle = function(location) {
   xle_file = read_xml(path) # Read in file
   
   for (i in seq_along(items_to_pull)) {
-    cols_of_interest[[i]] = xml_text(xml_find_all(xle_file, paste0(".//", items_to_pull[i]))) # pull actuall numbers out of XML. cols_of_interest becomes a vector containing 4 lists of values. 
+    cols_of_interest[[i]] = xml_text(xml_find_all(xle_file, paste0(".//", items_to_pull[i]))) # pull actual numbers out of XML. cols_of_interest becomes a vector containing 4 lists of values. 
   }
   for (i in (1:2)) { # Some files apparently have an extra date/time with no data attached. Not sure why this happens. This should catch that issue. 
     if (length(cols_of_interest[[i]]) != length(cols_of_interest[[4]])) {
