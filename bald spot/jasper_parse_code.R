@@ -2,7 +2,10 @@
 setwd("~/Desktop/summer_26/bald spot/sample_xml")
 getwd()
 
-list.files(pattern = "\\.xml$")
+all.files <- list.files(pattern = "\\.xml$")
+
+all.files <- as_tibble(all.files) %>% mutate(file.path.length = nchar(value))
+
 
 library(xml2)
 d <- read_xml("channel 1_UTC_20251026_141922.346.xml")
@@ -281,3 +284,50 @@ files <- drive_find(
 )
 nrow(files)
 files
+
+
+
+#################
+#TESTING STUFF 
+
+df <- read.csv("~/Desktop/summer_26/bald spot/csv_output/channel_0.csv")
+nrow(df); range(df$start_time); length(unique(df$start_time))
+
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+
+# --- load and clean ---
+df <- read.csv("~/Desktop/summer_26/bald spot/csv_output/channel_0.csv",
+               stringsAsFactors = FALSE)
+
+df <- df %>%
+  filter(LAF > 0, TMP >= -20, TMP <= 120) %>%   # drop junk region + bad temps
+  mutate(
+    datetime = ymd_hms(start_time, tz = "UTC"),
+    month    = factor(format(datetime, "%Y-%m"))
+  )
+
+# whole in-ground fiber, temp vs LAF, colored by month
+p1 <- ggplot(df, aes(x = TMP, y = LAF, group = start_time, color = month)) +
+  geom_path(linewidth = 0.2, alpha = 0.5) +
+  scale_y_reverse() +
+  labs(x = "Temperature (\u00B0C)", y = "Length along fiber (m)",
+       color = "Month", title = "Channel 0 — full fiber, by month") +
+  theme_bw()
+print(p1)
+
+#single borehole S1 (LAF 230.3-388.8)
+s1 <- df %>%
+  filter(LAF > 230.3, LAF < 388.8) %>%
+  mutate(depth_proxy = LAF - min(LAF))
+
+p2 <- ggplot(s1, aes(x = TMP, y = depth_proxy, group = start_time, color = month)) +
+  geom_path(linewidth = 0.4, alpha = 0.6) +
+  scale_y_reverse() +
+  labs(x = "Temperature (\u00B0C)", y = "Depth proxy (m into borehole)",
+       color = "Month", title = "Borehole S1") +
+  theme_bw()
+print(p2)
+
+
