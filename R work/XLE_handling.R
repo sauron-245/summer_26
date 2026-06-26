@@ -2,15 +2,19 @@
 # 1. Make sure there are no files in folder 'dtw_upload' and that the only file in 'dtw_formatted' is 'P1_baro_formatted'. 
 # 2. Drop new XLE files into folder 'dtw_upload' and give them the following names as appropriate: "P1_baro", "P1", "Bridge", "P5"
 # 3. Run all uncommented code. This will format the xle files and drop them into 'dtw_formatted' as .csvs.
-# 4. To check graphs of water level at the bridge, P1, and P5, run the extra code at the bottom. 
+# 4. To check graphs of water level at the bridge, P1, and P5, run the extra code at the bottom.
+
+# This will need to be adjusted to transform water height to height above sea level. I'll wait to do this until we've surveyed Bell Filed etc
 
 
 
 ## Install dependencies etc
 
+# install.packages("lubridate")
 # install.packages("xml2")
 # install.packages("XML")
 # install.packages("pracma")
+
 library(tidyverse)
 library(lubridate)
 library(xml2)
@@ -35,17 +39,21 @@ CleanData = function(df){
     filter(height_above > 0.003) %>% 
     slice(-result$ind)
   
-  h <- df_hampel$height_above # Much of the rest of this function came from Copilot but functions correctly 
+ # Much of the rest of this function came from Copilot but functions correctly 
   correction <- 0       
   in_block <- FALSE      
-  for (i in 2:length(h)) {
+  
+  for (i in 2:length(df_hampel$height_above)) {
+    
     # compute difference using original values
     diff_val <- df_hampel$height_above[i - 1] - df_hampel$height_above[i]
+    
     # detect start of a new erroneous block
-    if (diff_val > 0.2 && !in_block) { # This is the best threshold I've found for now. Adjust if it starts correcting drops caused by actual change in water level. 
+    if (diff_val > 0.2 && !in_block) { # This is the best threshold I've found for now. Adjust if it starts correcting drops caused by actual change in water level. Maybe adjust to percent change?
       correction <- diff_val   # lock in the correction for this block
       in_block <- TRUE
     }
+    
     # detect end of erroneous block (data realigns)
     if (diff_val <= 0.2 && in_block) { 
       correction <- 0
@@ -60,7 +68,7 @@ CleanData = function(df){
 
 
 ## Formatting XLE files
-# This function handles the Solinst weird file type as a .XML. It reads in the different components of the file as individual vectors, cleans them up, stitches them into a dataframe, and writes that DF to a .csv. 
+# This function handles the weird Solinst file type as a .XML. It reads in the different components of the file as individual vectors, cleans them up, stitches them into a dataframe, and writes that DF to a .csv. 
 
 handle_xle = function(location) {
   
@@ -68,11 +76,11 @@ handle_xle = function(location) {
   result = c("Date", "Time", "Pressure", "Temperature") 
   cols_of_interest = vector("list", length(items_to_pull))
   names(cols_of_interest) = result # Set up column names for final dataframe
-
  
   if (location != "P1_baro") { # only do this if it's a levelogger and not a barologger
-   p1_baro = read_csv("dtw/dtw_formatted/P1_baro_formatted.csv") # 
+   p1_baro = read_csv("dtw/dtw_formatted/P1_baro_formatted.csv")
   }
+  
   
   path = paste0("dtw/dtw_upload/", location, ".xle")
   xle_file = read_xml(path) # Read in file
@@ -80,15 +88,18 @@ handle_xle = function(location) {
   for (i in seq_along(items_to_pull)) {
     cols_of_interest[[i]] = xml_text(xml_find_all(xle_file, paste0(".//", items_to_pull[i]))) # pull actual numbers out of XML. cols_of_interest becomes a vector containing 4 lists of values. 
   }
+  
   for (i in (1:2)) { # Some files apparently have an extra date/time with no data attached. Not sure why this happens. This should catch that issue. 
     if (length(cols_of_interest[[i]]) != length(cols_of_interest[[4]])) {
       cols_of_interest[[i]] = cols_of_interest[[i]][2:(length(cols_of_interest[[i]]))]
     }
   }
+  
   df = as.data.frame(cols_of_interest, stringsAsFactors = FALSE) %>% # Turn vector of lists into dataframe 
     mutate(Date = ymd(Date), datetime = paste(Date, Time, sep = " "), datetime = ymd_hms(datetime), Temperature = as.numeric(Temperature), Pressure = as.numeric(Pressure)) %>% # merge 'date' and 'time' columns into formatted datetime
     select(c(-1, -2)) %>% 
     relocate(datetime) # Clean up
+  
  if (location != "P1_baro"){ # only do this if it's a levelogger and not a barologger
    df = df %>%
     mutate(datetime = round_date(datetime, unit = "15 mins")) %>% # Round time to align with barometric pressure reading
@@ -117,10 +128,6 @@ for (site in sites) {
 ## Check on data
 # Run all below lines and run to look at time series of water level
 
-for (site in sites) { # Read .csv files into R
-  assign(site, read_csv(paste0("dtw/dtw_formatted/", site, "_formatted.csv")))
-}
-
 check_csv = function(location) { # Use this to make graphs of temperature over time. Intended to check that dates/expected data gaps are behaving as they ought.
   if (location != "P1_baro"){
   file = read_csv(paste0("dtw/dtw_formatted/", location, "_formatted.csv"))
@@ -131,7 +138,9 @@ check_csv = function(location) { # Use this to make graphs of temperature over t
   print(p)
   }
 }
+
 for (site in sites){
+  assign(site, read_csv(paste0("dtw/dtw_formatted/", site, "_formatted.csv")))
   check_csv(site)
 }
 
