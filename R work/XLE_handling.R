@@ -2,13 +2,51 @@
 
 # install.packages("xml2")
 # install.packages("XML")
+# install.packages("pracma")
 library(tidyverse)
 library(lubridate)
 library(xml2)
 library(XML)
+library(pracma)
 
 
-## Function perhaps?
+## Data cleaning
+# This function does 2 things: 
+# a. Run a Hampel filter on the dataframe to remove outliers (i.e. slice out all measurements taken when the probe was removed from the well for sampling)
+# b. Correct an ongoing issue with depth loggers being placed in different places in the water column, mostly due to tangles in the cable and getting jammed in the well.
+# It goes along the entire dataframe row by row, identifies segments with a sudden drop that couldn't have been caused by changes in well level, then calculates the magnitude
+# of that drop and applies that value of correction to all impacted measurements. This assumes that the normal values are the correct water level in the well, and that there is
+# no difference between the measurement before and after the drop occurred. Unfortunately this chunk of code is pretty inefficient and can take a little while to run.
+
+CleanData = function(df){
+  data = df$height_above
+  result = hampel(data, k = 5, t0 = 3)
+  df_hampel = df %>% 
+    filter(height_above > 0.003) %>% 
+    slice(-result$ind)
+  
+  h <- df_hampel$height_above # Much of the rest of this function came from Copilot but functions correctly 
+  correction <- 0       
+  in_block <- FALSE      
+  for (i in 2:length(h)) {
+    # compute difference using original values
+    diff_val <- df_hampel$height_above[i - 1] - df_hampel$height_above[i]
+    # detect start of a new erroneous block
+    if (diff_val > 0.2 && !in_block) { # This is the best threshold I've found for now. Adjust if it starts correcting drops caused by actual change in water level. 
+      correction <- diff_val   # lock in the correction for this block
+      in_block <- TRUE
+    }
+    # detect end of erroneous block (data realigns)
+    if (diff_val <= 0.2 && in_block) { 
+      correction <- 0
+      in_block <- FALSE
+    }
+    # apply correction if inside a block
+    df_hampel$height_above[i] <- df_hampel$height_above[i] + correction
+  }
+  df_hampel %>% data.frame()
+}
+
 
 handle_xle = function(location) {
   
@@ -41,8 +79,11 @@ handle_xle = function(location) {
    df = df %>%
     mutate(datetime = round_date(datetime, unit = "15 mins")) %>% # Round time to align with barometric pressure reading
     left_join(p1_baro %>% select(datetime, Pressure), by = "datetime") %>% # attach pressure data
-    mutate(baro_pressure = (Pressure.y * 0.101972), height_above = (Pressure.x - baro_pressure)) # Convert atmospheric pressure to feet then subtract off
+    mutate(baro_pressure = (Pressure.y * 0.101972), height_above = (Pressure.x - baro_pressure)) %>% 
+    drop_na() # Convert atmospheric pressure to feet then subtract off
+   df = CleanData(df) # Run Hampel filter and adjust for potential misplacement of probe in the water column
  }
+
  write_csv(df, paste0(location, "_formatted.csv"))
  
 }
@@ -51,10 +92,10 @@ handle_xle = function(location) {
 sites = c("P1_baro", "P1", "Bridge", "P5")
 
 for (site in sites) {
-  handle_xle(site)
+  handle_xle(site) # This can take a little wh
 }
 
-for (site in sites) {
+for (site in sites) { # Read .csv files into R
   assign(site, read_csv(paste0(site, "_formatted.csv")))
 }
 
@@ -72,10 +113,5 @@ for (site in sites){
   check_csv(site)
 }
 
-bridge_correct = read_csv("BridgeLevellogger.6.23.26.csv") %>% 
-  rename(datetime = DateTime) %>% 
-  mutate(datetime = mdy_hm(datetime)) %>% 
-  rename(height_above = LEVEL)
-ggplot(Bridge, aes(x = datetime, y = height_above)) +
-  geom_line()+
-  geom_line(data = bridge_correct)
+
+
