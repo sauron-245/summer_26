@@ -30,11 +30,11 @@ update_hobo_log = function(site) {
   cols_to_check = c("Date-Time", "Temperature", "Temperature , °C", "Electrical Conductivity", "Specific Conductivity", "Salinity", "Total Dissolved Solids")
   
   log_standing <- read_csv(paste0("hobos/hobos_running/", site, "_current.csv")) %>% # Running total of log data
-    mutate(`Date-Time` = as.character(`Date-Time`))
+    mutate(`Date-Time` = ymd_hms(`Date-Time`))
   log_new <- read_excel(paste0("hobos/hobos_upload/", site, ".xlsx")) %>%  # Most recently downloaded data
     rename_with(~ trimws(sub("\\(.*$", "", .x))) %>% # Correctly format column names and get rid of metadata columns
     select(any_of(cols_to_check)) %>%  # References list of columns of interest and selects just columns containing real data, removing metadata/empty columns
-    mutate(`Date-Time` = as.character(`Date-Time`))
+    mutate(`Date-Time` = ymd_hms(`Date-Time`))
   
   if (length(names(log_new)) == 0) {
     stop(paste0("Check column names/format at site ", site, ".")) # This will hopefully catch issues caused by mismatched column names between the running .csv and newly uploaded data
@@ -58,8 +58,8 @@ update_hobo_log = function(site) {
   write_csv(log_standing_updated, paste0("hobos/hobos_running/", site, "_current.csv")) # Adds new data and overwrites existing .csv
 }
 
-hobos_week = hobos_all
-for (hobo in hobos_week) {
+
+for (hobo in hobos_all) {
   update_hobo_log(hobo)
 }
 
@@ -74,6 +74,6 @@ check_csv = function(site) { # Use this to make graphs of temperature over time.
   print(p)
   }
 
-for (hobo in hobos_week) {
+for (hobo in hobos_all) {
   check_csv(hobo)
 }
