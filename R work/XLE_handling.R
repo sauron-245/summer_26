@@ -1,3 +1,11 @@
+### Instructions:
+# 1. Make sure there are no files in folder 'dtw_upload' and that the only file in 'dtw_formatted' is 'P1_baro_formatted'. 
+# 2. Drop new XLE files into folder 'dtw_upload' and give them the following names as appropriate: "P1_baro", "P1", "Bridge", "P5"
+# 3. Run all uncommented code. This will format the xle files and drop them into 'dtw_formatted' as .csvs.
+# 4. To check graphs of water level at the bridge, P1, and P5, run the extra code at the bottom. 
+
+
+
 ## Install dependencies etc
 
 # install.packages("xml2")
@@ -10,7 +18,9 @@ library(XML)
 library(pracma)
 
 
+
 ## Data cleaning
+
 # This function does 2 things: 
 # a. Run a Hampel filter on the dataframe to remove outliers (i.e. slice out all measurements taken when the probe was removed from the well for sampling)
 # b. Correct an ongoing issue with depth loggers being placed in different places in the water column, mostly due to tangles in the cable and getting jammed in the well.
@@ -47,6 +57,10 @@ CleanData = function(df){
   df_hampel %>% data.frame()
 }
 
+
+
+## Formatting XLE files
+# This function handles the Solinst weird file type as a .XML. It reads in the different components of the file as individual vectors, cleans them up, stitches them into a dataframe, and writes that DF to a .csv. 
 
 handle_xle = function(location) {
   
@@ -89,11 +103,19 @@ handle_xle = function(location) {
 }
 
 
+
+## Set up list of sites and handle files
+
 sites = c("P1_baro", "P1", "Bridge", "P5")
 
 for (site in sites) {
-  handle_xle(site) # This can take a little wh
+  handle_xle(site) # This can take a little while to run
 }
+
+
+
+## Check on data
+# Run all below lines and run to look at time series of water level
 
 for (site in sites) { # Read .csv files into R
   assign(site, read_csv(paste0("dtw/dtw_formatted/", site, "_formatted.csv")))
@@ -107,10 +129,9 @@ check_csv = function(location) { # Use this to make graphs of temperature over t
     geom_line() +
     labs(title = location)
   print(p)
-}
+  }
 }
 for (site in sites){
   check_csv(site)
 }
-
 
