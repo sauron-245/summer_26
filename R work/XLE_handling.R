@@ -57,10 +57,10 @@ handle_xle = function(location) {
 
  
   if (location != "P1_baro") { # only do this if it's a levelogger and not a barologger
-   p1_baro = read_csv("P1_baro_formatted.csv") # 
+   p1_baro = read_csv("dtw/dtw_formatted/P1_baro_formatted.csv") # 
   }
   
-  path = paste0(location, ".xle")
+  path = paste0("dtw/dtw_upload/", location, ".xle")
   xle_file = read_xml(path) # Read in file
   
   for (i in seq_along(items_to_pull)) {
@@ -84,7 +84,7 @@ handle_xle = function(location) {
    df = CleanData(df) # Run Hampel filter and adjust for potential misplacement of probe in the water column
  }
 
- write_csv(df, paste0(location, "_formatted.csv"))
+ write_csv(df, paste0("dtw/dtw_formatted/", location, "_formatted.csv"))
  
 }
 
@@ -96,22 +96,21 @@ for (site in sites) {
 }
 
 for (site in sites) { # Read .csv files into R
-  assign(site, read_csv(paste0(site, "_formatted.csv")))
+  assign(site, read_csv(paste0("dtw/dtw_formatted/", site, "_formatted.csv")))
 }
 
-check_csv = function(location) { # Use this to make graphs of temperature over time. Intended to check that dates/expected data gaps are behaving as they ought. 
+check_csv = function(location) { # Use this to make graphs of temperature over time. Intended to check that dates/expected data gaps are behaving as they ought.
   if (location != "P1_baro"){
-  file = read_csv(paste0(location, "_formatted.csv")) 
-  p = file %>% 
+  file = read_csv(paste0("dtw/dtw_formatted/", location, "_formatted.csv"))
+  p = file %>%
     ggplot(aes(x = datetime, y = height_above)) +
-    geom_line() + 
+    geom_line() +
     labs(title = location)
   print(p)
-  }
+}
 }
 for (site in sites){
   check_csv(site)
 }
-
 
 
