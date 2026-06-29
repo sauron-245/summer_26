@@ -54,6 +54,8 @@ update_hobo_log = function(site) {
     filter(`Date-Time` > date_current_last) %>% # selects only data not present in running logs
     filter(Temperature > 0)
   log_standing_updated = rbind(log_standing, data_to_add)
+  log_standing_updated = log_standing_updated %>% 
+    mutate(`Date-Time` = format(`Date-Time`, "%Y-%m-%d %H:%M:%S"))
   write_csv(log_standing_updated, paste0("hobos/hobos_running/", site, "_current.csv")) # Adds new data and overwrites existing .csv
 }
 
@@ -74,5 +76,10 @@ check_csv = function(site) { # Use this to make graphs of temperature over time.
   }
 
 for (hobo in hobos_all) {
+  check_csv(hobo)
+}
+
+for (hobo in hobos_all){
+  assign(hobo, read_csv(paste0("hobos/hobos_running/", hobo, "_current.csv")))
   check_csv(hobo)
 }
