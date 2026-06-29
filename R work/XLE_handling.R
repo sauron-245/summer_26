@@ -104,7 +104,9 @@ handle_xle = function(location) {
    df = df %>%
     mutate(datetime = round_date(datetime, unit = "15 mins")) %>% # Round time to align with barometric pressure reading
     left_join(p1_baro %>% select(datetime, Pressure), by = "datetime") %>% # attach pressure data
-    mutate(baro_pressure = (Pressure.y * 0.101972), height_above = (Pressure.x - baro_pressure)) %>% 
+    mutate(baro_pressure = (Pressure.y * 0.101972), height_above = (Pressure.x - baro_pressure),
+           water_elevation = ifelse(location == "P1", )
+           ) %>% 
     drop_na() # Convert atmospheric pressure to feet then subtract off
    df = CleanData(df) # Run Hampel filter and adjust for potential misplacement of probe in the water column
  }
