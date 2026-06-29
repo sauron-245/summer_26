@@ -1,20 +1,19 @@
-####################################################################################
-##### Instructions: #####                                                          #
-# 1. Download all new data from HOBO loggers as .xlsx files                        #
-# 2. Drop files into folder 'hobos/hobos_upload'                                         #
-# 3. Rename all files using the following conventions:                             #
-#     a. piezometers: hobo name alone (e.g. 'P3')                                  #
-#     b. creek temp monitors: hobo name plus '_creek' (e.g. P5_creek)              # 
-#     c. creek conductivity monitors: same as temp plus _cond (e.g. P5_creek_cond) #
-#     d. Downstream monitor: 'Dwnstrm'                                             #
-# 4. In body of script, add all filenames in 'hobos/hobos_upload' to the 'hobos_week'    #  
-#    vector in quotation marks (e.g. hobos_week = c("P1", "P3", "P5_creek"))       #
-# 5. Run all lines of code. If you encounter errors, I suggest calling             #
-#    update_hobo_log() on each file in order to determine which one is             # 
-#    causing issues. The code is designed to catch several likely issues, and      # 
-#    may provide information on which site is causing problems in the terminal.    # 
-# 6. Once code has run without issue, delete all files in 'hobos/hobos_upload'.          #
-####################################################################################
+##### Instructions: #####                                                          
+# 1. Download all new data from HOBO loggers as .xlsx files                        
+# 2. Drop files into folder 'hobos/hobos_upload'                                         
+# 3. Rename all files using the following conventions:                             
+#     a. piezometers: hobo name alone (e.g. 'P3')                                  
+#     b. creek temp monitors: hobo name plus '_creek' (e.g. P5_creek)              
+#     c. creek conductivity monitors: same as temp plus _cond (e.g. P5_creek_cond) 
+#     d. Downstream monitor: 'Dwnstrm'                                             
+# 4. In body of script, add all filenames in 'hobos/hobos_upload' to the 'hobos_week'     
+#    vector in quotation marks (e.g. hobos_week = c("P1", "P3", "P5_creek"))       
+# 5. Run all lines of code. If you encounter errors, I suggest calling             
+#    update_hobo_log() on each file in order to determine which one is              
+#    causing issues. The code is designed to catch several likely issues, and      
+#    may provide information on which site is causing problems in the terminal.    
+# 6. Once code has run without issue, delete all files in 'hobos/hobos_upload'.          
+
 
 # install.packages("tidyverse")
 # install.packages("lubridate") # Comment in if packages have not been installed
