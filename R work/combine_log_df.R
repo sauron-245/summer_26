@@ -61,7 +61,7 @@ update_hobo_log = function(site) {
   write_csv(log_standing_updated, paste0("hobos/hobos_running/", site, "_current.csv")) # Adds new data and overwrites existing .csv
 }
 
-hobos_week = c("Dwnstrm", "P1", "P2", "P2_creek", "P3", "P4", "P5_creek", "P5_creek_cond")
+hobos_week = c("P1")
 
 for (hobo in hobos_week) {
   update_hobo_log(hobo)
