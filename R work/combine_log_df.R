@@ -81,3 +81,4 @@ check_csv = function(site) { # Use this to make graphs of temperature over time.
 for (hobo in hobos_week) {
   check_csv(hobo)
 }
+
