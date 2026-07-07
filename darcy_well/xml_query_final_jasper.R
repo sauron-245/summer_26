@@ -174,16 +174,52 @@ picks %>% mutate(date = as_date(datetime)) %>% distinct(date) %>% arrange(date) 
 # fetch and add depth
 dat <- fetch_and_parse(picks) %>% add_depth()
 
+# well geometry (should be fixed) 
+
+TURNAROUND_LAF  <- 83.5   # lowest point of the well (cable turnaround), in meters along fiber
+TOP_OF_WELL_LAF <- 0      # LAF where the cable enters the top of the well; depth = LAF - this
+TMP_MIN <- -20            # drop physically impossible temperatures
+TMP_MAX <- 120
+
+
+# folds one profile: splits into down/up legs, converts each to true depth,
+#  discards everything past the up-leg (the out-of-well junk)
+fold_profile <- function(df) {
+  well_bottom_laf <- TURNAROUND_LAF + (TURNAROUND_LAF - TOP_OF_WELL_LAF)  # end of up-leg
+  
+  df %>%
+    filter(TMP > TMP_MIN, TMP < TMP_MAX,
+           LAF >= TOP_OF_WELL_LAF, LAF <= well_bottom_laf) %>%
+    mutate(
+      datetime = ymd_hms(start_time, tz = "UTC"),
+      label = format(datetime, "%Y-%m-%d %H:%M"),
+      leg = if_else(LAF <= TURNAROUND_LAF, "down", "up"),
+      depth_m = if_else(LAF <= TURNAROUND_LAF,
+                        LAF - TOP_OF_WELL_LAF,                       # down: depth grows with LAF
+                        2 * TURNAROUND_LAF - LAF - TOP_OF_WELL_LAF)  # up: mirrored back to top
+    ) %>%
+    filter(depth_m >= 0)
+}
+
+
+# build the folded data for whatever queried
+
+folded <- fold_profile(dat)
+
 
 # =====================================================================
-#  plot: temperature vs depth, one line per selected observation
+#  PLOT — down (solid) vs up (dashed), colored by observation
 # =====================================================================
+#  Each queried observation gets its own color; solid = cable going down,
+#  dashed = cable coming back up. Overlapping solid/dashed = good symmetry.
 
-dat %>%
-  mutate(label = format(datetime, "%Y-%m-%d")) %>%
-  ggplot(aes(TMP, depth_m, group = start_time, color = label)) +
-  geom_path(linewidth = 0.5) +
+ggplot(folded, aes(TMP, depth_m, color = label, linetype = leg,
+                   group = interaction(start_time, leg))) +
+  geom_path(linewidth = 0.6) +
   scale_y_reverse() +
-  labs(x = "Temperature (°C)", y = "Depth below well top (m)", color = "date",
-       title = "Darcy Well — temperature vs depth") +
+  scale_linetype_manual(values = c(down = "solid", up = "dotted"),
+                        labels = c(down = "down", up = "up")) +
+  labs(x = "Temperature (°C)", y = "Depth below well top (m)",
+       color = "observation", linetype = "cable leg",
+       title = "Darcy Well — temperature vs depth (down solid, up dashed)") +
   theme_bw()
