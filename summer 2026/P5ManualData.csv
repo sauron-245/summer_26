@@ -1,6 +1,6 @@
 Well,Date,Depth to water,Temp top before,Temp bottom before,SPC top before,SPC bottom before,Cond top before ,Cond bottom before ,TDS top before,TDS bottom before,Pump time,Recharge time,Temp top after,Temp bottom after,SPC top after,SPC bottom after,Cond top after,Cond bottom after,TDS top after,TDS bottom after,Notes
 P5,6/25/2024 0:00:00,,19.1,,,,,,na,,,,,,,,,,,,
-P5,6/27/2024 0:00:00,,,,NOTE: Jeremiah's values seem really really weird. Are these maybe normal conductivity?,,,,,,,,,,,,,,,,
+P5,6/27/2024 0:00:00,,,,,,,,,,,,,,,,,,,,NOTE: Jeremiah's spc values seem really low compared to our continuous and manual data. Are these maybe normal conductivity?
 P5,6/29/2024 0:00:00,,12.1,,481.7,,,,0.23,,,,,,,,,,,,
 P5,7/6/2024 0:00:00,,13.9,,438.8,,,,0.2,,,,,,,,,,,,
 P5,7/8/2024 0:00:00,,13.2,,447.9,,,,0.2,,,,,,,,,,,,
@@ -48,3 +48,4 @@ P5,5/19/2026 0:00:00,12.33,9.8,9.8,689,684,487,485,0.3,0.3,,,10.7,10.9,729,643,5
 P5,5/26/2026 0:00:00,12.43,10.6,9.9,686,603,494,429.7,0.3,0.3,,,11.4,10.5,723,605,537,,0.4,0.3,"Pumped to create suction, but no water was removed, water in culvert was barely flowing, likely is left over rain water from 2 nights ago"
 P5,6/16/2026 0:00:00,12.5,11.3,10.1,677,684,500,489,0.3,0.3,,,11.4,11.1,674,688,500,493,0.3,0.3,"Pumped to create suction, removed a small volume of water. Syringe failure caused ~15 minute delay in sampling."
 P5,6/23/2026 0:00:00,12.5,11.9,10.2,707,715,530,513,0.3,0.3,,,12.4,11.2,705,703,534,517,0.3,0.3,"Pumped to create suction, no water removed. No water in culvert"
+P5,6/30/2026 0:00:00,12.45,12,10.3,672,706,525,508,0.3,0.3,,,12.7,10.2,704,672,538,483,0.3,0.3,"Pumped to create suction, no water removed. No water in culvert"
