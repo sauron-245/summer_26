@@ -8,7 +8,7 @@
 #   1. drive_auth() to connect.
 #   2. Set FOLDER_ID and the depth offset below.
 #   3. Build the index once, then edit the USER SETTINGS block and run.
-###########################
+############################################################
 
 library(googledrive)
 library(xml2)
@@ -106,7 +106,6 @@ add_depth <- function(df) {
 
 
 
-#  build the index ONCE per session (this is the slow-ish drive call)
 
 
 index <- build_file_index(FOLDER_ID)
@@ -118,44 +117,40 @@ cat("indexed", nrow(index), "files, spanning",
 ############################################################
 #  USER SETTINGS — edit these to choose what data you want
 ############################################################
+### 6pm UTC is the ice test####
+target_hour <- 22            # hour of day (UTC, 0-23) to sample near; 12 = noon UTC (6am CST)
 
+# choose ONE mode: "day_of_month", "date_range", or "single_day"
+mode <- "date_range"
 
-target_hour <- 12            # hour of day (UTC, 0-23) to sample near; 12 = noon
+# for mode = "day_of_month":
+day_of_month <- 15
 
-# pick ONE mode by setting it TRUE:
-mode_day_of_month <- TRUE    # one observation per month, on a chosen day
-mode_date_range   <- FALSE   # every day between two dates
-mode_single_day   <- FALSE   # just one specific day
+# for mode = "date_range":
+range_start <- "2026-06-25"
+range_end   <- "2026-07-02"
 
-# settings for mode_day_of_month:
-day_of_month <- 15           # e.g. 15 = the 15th of each month
-
-# settings for mode_date_range:
-range_start <- "2025-06-01"  # "YYYY-MM-DD"
-range_end   <- "2025-06-30"
-
-# settings for mode_single_day:
-single_day  <- "2025-06-15"  # "YYYY-MM-DD"
+# for mode = "single_day":
+single_day  <- "2026-06-15"
 
 ############################################################
 #  (you shouldn't need to edit below here)
 ############################################################
 
-
-# builds the file selection from your settings above
 pick_files <- function() {
   base <- index
   
-  if (mode_day_of_month) {
+  if (mode == "day_of_month") {
     base <- base %>% filter(day == day_of_month)
-  } else if (mode_date_range) {
+  } else if (mode == "date_range") {
     base <- base %>% filter(as_date(datetime) >= as_date(range_start),
                             as_date(datetime) <= as_date(range_end))
-  } else if (mode_single_day) {
+  } else if (mode == "single_day") {
     base <- base %>% filter(as_date(datetime) == as_date(single_day))
+  } else {
+    stop("mode must be 'day_of_month', 'date_range', or 'single_day'")
   }
   
-  # keep the one measurement nearest the target hour on each day
   base %>%
     mutate(date_only = as_date(datetime),
            mins_from_target = abs((hour * 60 + minute) - target_hour * 60)) %>%
@@ -177,7 +172,7 @@ dat <- fetch_and_parse(picks) %>% add_depth()
 # well geometry (should be fixed) 
 
 TURNAROUND_LAF  <- 83.5   # lowest point of the well (cable turnaround), in meters along fiber
-TOP_OF_WELL_LAF <- 0      # LAF where the cable enters the top of the well; depth = LAF - this
+TOP_OF_WELL_LAF <- 9      # LAF where the cable enters the top of the well; depth = LAF - this
 TMP_MIN <- -20            # drop physically impossible temperatures
 TMP_MAX <- 120
 
@@ -207,19 +202,27 @@ fold_profile <- function(df) {
 folded <- fold_profile(dat)
 
 
-# =====================================================================
+############################################################
 #  PLOT — down (solid) vs up (dashed), colored by observation
-# =====================================================================
 #  Each queried observation gets its own color; solid = cable going down,
 #  dashed = cable coming back up. Overlapping solid/dashed = good symmetry.
 
-ggplot(folded, aes(TMP, depth_m, color = label, linetype = leg,
-                   group = interaction(start_time, leg))) +
+plot_data <- folded %>% filter(SHOW_UP_LEG | leg == "down")
+
+comparison_plot <- ggplot(data = plot_data,
+                          mapping = aes(TMP, depth_m, color = label, linetype = leg,
+                                        group = interaction(start_time, leg))) +
   geom_path(linewidth = 0.6) +
   scale_y_reverse() +
-  scale_linetype_manual(values = c(down = "solid", up = "dotted"),
+  coord_cartesian(xlim = c(10, 13)) +
+  scale_linetype_manual(values = c(down = "solid", up = "dashed"),
                         labels = c(down = "down", up = "up")) +
   labs(x = "Temperature (°C)", y = "Depth below well top (m)",
        color = "observation", linetype = "cable leg",
-       title = "Darcy Well — temperature vs depth (down solid, up dashed)") +
+       title = "Darcy Well — temperature vs depth") +
   theme_bw()
+
+comparison_plot
+
+####pumping test dates march 19 - 27 and startup testing may 4-5####
+
