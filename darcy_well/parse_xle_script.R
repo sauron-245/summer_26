@@ -188,12 +188,12 @@ CSV_PATH <- "~/GitHub/summer_26/darcy_well/csv_output/channel_0.csv"
 #   S1: 230.3 - 388.8 , S2: 775.1 - 933.6 , S3: 1255.9 - 1424.4
 #pick which borehole to feature in plot 2:
 BOREHOLE_NAME <- "S1"
-BOREHOLE_LAF_MIN <- 20
-BOREHOLE_LAF_MAX <- 100
+BOREHOLE_LAF_MIN <- -1
+BOREHOLE_LAF_MAX <- 10
 
 # drops temps that seem insane?
-TMP_MIN <- -20
-TMP_MAX <- 120
+TMP_MIN <- 0
+TMP_MAX <- 100
 
 
 #load and clean
@@ -205,8 +205,7 @@ df <- df %>%
   # turn the text timestamp into a real datetime, and pull out a short label
   mutate(
     datetime = ymd_hms(start_time, tz = "UTC"),
-    time_label = format(datetime, "%H:%M")
-  )
+    time_label = format(datetime, "%H:%M"))
 
 
 ## plot 1
@@ -221,11 +220,12 @@ p1 <- ggplot(df, aes(x = TMP, y = LAF, group = start_time, color = time_label)) 
 
 print(p1)
 
-## plot 2 
+## plot 2
 
 bh <- df %>%
   filter(LAF > BOREHOLE_LAF_MIN, LAF < BOREHOLE_LAF_MAX) %>%
-  mutate(depth_proxy = LAF - min(LAF))   # 0 at borehole top
+  mutate(depth_proxy = LAF - min(LAF), # 0 at borehole top
+         time_round = round_date(datetime, unit = "15 mins"))
 
 p2 <- ggplot(bh, aes(x = TMP, y = depth_proxy,
                      group = start_time, color = time_label)) +
@@ -267,67 +267,67 @@ print(p3)
 
 
 
-
-##Google drive to .csv
-library(googledrive)
-#need to run this to give R access to your drive
-drive_auth()   
-shared <- drive_find(q = "sharedWithMe = true")
-print(shared, n = 50)
-
-
-folder <- drive_get(as_id("12tkE_ITIb1XxKthTA4BVB965zs5w4sTe"))
-
-files <- drive_find(
-  q = "'12tkE_ITIb1XxKthTA4BVB965zs5w4sTe' in parents",
-  corpus = "allDrives"
-)
-nrow(files)
-files
-
-
-
-#################
-#TESTING STUFF 
-
-df <- read.csv("~/Desktop/summer_26/bald spot/csv_output/channel_0.csv")
-nrow(df); range(df$start_time); length(unique(df$start_time))
-
-library(dplyr)
-library(ggplot2)
-library(lubridate)
-
-# --- load and clean ---
-df <- read.csv("~/Desktop/summer_26/bald spot/csv_output/channel_0.csv",
-               stringsAsFactors = FALSE)
-
-df <- df %>%
-  filter(LAF > 0, TMP >= -20, TMP <= 120) %>%   # drop junk region + bad temps
-  mutate(
-    datetime = ymd_hms(start_time, tz = "UTC"),
-    month    = factor(format(datetime, "%Y-%m"))
-  )
-
-# whole in-ground fiber, temp vs LAF, colored by month
-p1 <- ggplot(df, aes(x = TMP, y = LAF, group = start_time, color = month)) +
-  geom_path(linewidth = 0.2, alpha = 0.5) +
-  scale_y_reverse() +
-  labs(x = "Temperature (\u00B0C)", y = "Length along fiber (m)",
-       color = "Month", title = "Channel 0 — full fiber, by month") +
-  theme_bw()
-print(p1)
-
-#single borehole S1 (LAF 230.3-388.8)
-s1 <- df %>%
-  filter(LAF > 230.3, LAF < 388.8) %>%
-  mutate(depth_proxy = LAF - min(LAF))
-
-p2 <- ggplot(s1, aes(x = TMP, y = depth_proxy, group = start_time, color = month)) +
-  geom_path(linewidth = 0.4, alpha = 0.6) +
-  scale_y_reverse() +
-  labs(x = "Temperature (\u00B0C)", y = "Depth proxy (m into borehole)",
-       color = "Month", title = "Borehole S1") +
-  theme_bw()
-print(p2)
-
-
+#
+# ##Google drive to .csv
+# library(googledrive)
+# #need to run this to give R access to your drive
+# drive_auth()   
+# shared <- drive_find(q = "sharedWithMe = true")
+# print(shared, n = 50)
+# 
+# 
+# folder <- drive_get(as_id("12tkE_ITIb1XxKthTA4BVB965zs5w4sTe"))
+# 
+# files <- drive_find(
+#   q = "'12tkE_ITIb1XxKthTA4BVB965zs5w4sTe' in parents",
+#   corpus = "allDrives"
+# )
+# nrow(files)
+# files
+# 
+# 
+# 
+# #################
+# #TESTING STUFF 
+# 
+# df <- read.csv("~/Desktop/summer_26/bald spot/csv_output/channel_0.csv")
+# nrow(df); range(df$start_time); length(unique(df$start_time))
+# 
+# library(dplyr)
+# library(ggplot2)
+# library(lubridate)
+# 
+# # --- load and clean ---
+# df <- read.csv("~/Desktop/summer_26/bald spot/csv_output/channel_0.csv",
+#                stringsAsFactors = FALSE)
+# 
+# df <- df %>%
+#   filter(LAF > 0, TMP >= -20, TMP <= 120) %>%   # drop junk region + bad temps
+#   mutate(
+#     datetime = ymd_hms(start_time, tz = "UTC"),
+#     month    = factor(format(datetime, "%Y-%m"))
+#   )
+# 
+# # whole in-ground fiber, temp vs LAF, colored by month
+# p1 <- ggplot(df, aes(x = TMP, y = LAF, group = start_time, color = month)) +
+#   geom_path(linewidth = 0.2, alpha = 0.5) +
+#   scale_y_reverse() +
+#   labs(x = "Temperature (\u00B0C)", y = "Length along fiber (m)",
+#        color = "Month", title = "Channel 0 — full fiber, by month") +
+#   theme_bw()
+# print(p1)
+# 
+# #single borehole S1 (LAF 230.3-388.8)
+# s1 <- df %>%
+#   filter(LAF > 230.3, LAF < 388.8) %>%
+#   mutate(depth_proxy = LAF - min(LAF))
+# 
+# p2 <- ggplot(s1, aes(x = TMP, y = depth_proxy, group = start_time, color = month)) +
+#   geom_path(linewidth = 0.4, alpha = 0.6) +
+#   scale_y_reverse() +
+#   labs(x = "Temperature (\u00B0C)", y = "Depth proxy (m into borehole)",
+#        color = "Month", title = "Borehole S1") +
+#   theme_bw()
+# print(p2)
+# 
+# 

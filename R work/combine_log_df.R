@@ -1,20 +1,21 @@
-####################################################################################
-##### Instructions: #####                                                          #
-# 1. Download all new data from HOBO loggers as .xlsx files                        #
-# 2. Drop files into folder 'hobos/hobos_upload'                                         #
-# 3. Rename all files using the following conventions:                             #
-#     a. piezometers: hobo name alone (e.g. 'P3')                                  #
-#     b. creek temp monitors: hobo name plus '_creek' (e.g. P5_creek)              # 
-#     c. creek conductivity monitors: same as temp plus _cond (e.g. P5_creek_cond) #
-#     d. Downstream monitor: 'Dwnstrm'                                             #
-# 4. In body of script, add all filenames in 'hobos/hobos_upload' to the 'hobos_week'    #  
-#    vector in quotation marks (e.g. hobos_week = c("P1", "P3", "P5_creek"))       #
-# 5. Run all lines of code. If you encounter errors, I suggest calling             #
-#    update_hobo_log() on each file in order to determine which one is             # 
-#    causing issues. The code is designed to catch several likely issues, and      # 
-#    may provide information on which site is causing problems in the terminal.    # 
-# 6. Once code has run without issue, delete all files in 'hobos/hobos_upload'.          #
-####################################################################################
+##### Instructions: #####                                                          
+# 1. Download all new data from HOBO loggers as .xlsx files                        
+# 2. Drop files into folder 'hobos/hobos_upload'                                         
+# 3. Rename all files using the following conventions:                             
+#     a. piezometers: hobo name alone (e.g. 'P3')                                  
+#     b. creek temp monitors: hobo name plus '_creek' (e.g. P5_creek)              
+#     c. creek conductivity monitors: same as temp plus _cond (e.g. P5_creek_cond) 
+#     d. Downstream monitor: 'Dwnstrm'                                             
+# 4. In body of script, add all filenames in 'hobos/hobos_upload' to the 'hobos_week'      
+#    vector in quotation marks (e.g. hobos_week = c("P1", "P3", "P5_creek")). If you're
+#    updating data for all monitors, change both for loops at the bottom of the script to 
+#    iterate over 'hobos_all' instead of 'hobos_week'.
+# 5. Source the script. If you encounter errors, I suggest calling             
+#    update_hobo_log() on each file in order to determine which one is             
+#    causing issues. The code is designed to catch several likely issues, and      
+#    may provide information on which site is causing problems in the terminal.     
+# 6. Once code has run without issue, delete all files in 'hobos/hobos_upload'.          
+
 
 # install.packages("tidyverse")
 # install.packages("lubridate") # Comment in if packages have not been installed
@@ -24,7 +25,7 @@ library(lubridate)
 library(readxl)
 library(ggplot2)
 
-hobos_all = c("Dwnstrm", "P1", "P1_creek", "P2", "P2_creek", "P3", "P4", "P4_creek", "P5", "P5_creek", "P5_creek_cond")
+hobos_all = c("Dwnstrm", "P1", "P1_creek", "P2", "P2_creek", "P3", "P4", "P4_creek", "P5", "P5_creek", "P5_creek_cond") # Default option for all HOBO monitors. 
 
 update_hobo_log = function(site) {
   cols_to_check = c("Date-Time", "Temperature", "Temperature , °C", "Electrical Conductivity", "Specific Conductivity", "Salinity", "Total Dissolved Solids")
@@ -41,11 +42,11 @@ update_hobo_log = function(site) {
   }
   
   if ("Temperature , °C" %in% names(log_new)){
-    log_new = log_new %>% rename(Temperature = `Temperature , °C`)
+    log_new = log_new %>% rename(Temperature = `Temperature , °C`) # Some of the hobos use a different column name for temperature 
   }
   
-  date_current_last = as_datetime(log_standing[[nrow(log_standing),1]])
-  date_new = as_datetime(log_new[[nrow(log_new),1]])
+  date_current_last = as_datetime(log_standing[[nrow(log_standing),1]]) # Last datapoint present in running data log
+  date_new = as_datetime(log_new[[nrow(log_new),1]]) # Last datapoint present in new data
 
   if (date_current_last == date_new) { # Checks if running log data are already up to date
     stop(paste0("Most recent date of running log data for site ", site, " matches last date on added data. Have you already merged these dataframes?"))
@@ -53,17 +54,20 @@ update_hobo_log = function(site) {
 
   data_to_add = log_new %>%
     filter(`Date-Time` > date_current_last) %>% # selects only data not present in running logs
-    filter(Temperature > 0)
-  log_standing_updated = rbind(log_standing, data_to_add)
+    filter(Temperature > 0) # Catches some points collected when the monitor was removed from the well during winter
+  log_standing_updated = rbind(log_standing, data_to_add) 
+  log_standing_updated = log_standing_updated %>% 
+    mutate(`Date-Time` = format(`Date-Time`, "%Y-%m-%d %H:%M:%S"))
   write_csv(log_standing_updated, paste0("hobos/hobos_running/", site, "_current.csv")) # Adds new data and overwrites existing .csv
 }
 
+hobos_week = c("P1")
 
-for (hobo in hobos_all) {
+for (hobo in hobos_week) {
   update_hobo_log(hobo)
 }
 
-# By default, the above for loop updates all running hobo data. In order to target updates to specific files, replace 'hobos_all' with a vector containing just the sites of interest (e.g. c("P1", "P3", "P5_creek")).
+## By default, the above for loop updates all running hobo data. In order to target updates to specific files, replace 'hobos_all' with a vector containing just the sites of interest (e.g. c("P1", "P3", "P5_creek")).
 
 check_csv = function(site) { # Use this to make graphs of temperature over time. Intended to check that dates/expected data gaps are behaving as they ought. 
   file = read_csv(paste0("hobos/hobos_running/", site, "_current.csv")) 
@@ -74,6 +78,7 @@ check_csv = function(site) { # Use this to make graphs of temperature over time.
   print(p)
   }
 
-for (hobo in hobos_all) {
+for (hobo in hobos_week) {
   check_csv(hobo)
 }
+
