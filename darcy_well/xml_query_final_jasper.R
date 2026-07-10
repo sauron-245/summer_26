@@ -120,8 +120,13 @@ cat("indexed", nrow(index), "files, spanning",
 ### 6pm UTC is the ice test####
 target_hour <- 22            # hour of day (UTC, 0-23) to sample near; 12 = noon UTC (6am CST)
 
-# choose ONE mode: "day_of_month", "date_range", or "single_day"
-mode <- "date_range"
+# choose ONE mode: "day_of_month", "date_range", "single_day", or "time_window"
+mode <- "time_window"
+
+# for mode = "time_window":  every measurement between two times on one day
+window_day        <- "2026-07-02"   # "YYYY-MM-DD"
+window_start_hour <- 17              # start hour (UTC, 0-23)
+window_end_hour   <- 19             # end hour (UTC, 0-23)
 
 # for mode = "day_of_month":
 day_of_month <- 15
@@ -147,10 +152,20 @@ pick_files <- function() {
                             as_date(datetime) <= as_date(range_end))
   } else if (mode == "single_day") {
     base <- base %>% filter(as_date(datetime) == as_date(single_day))
+  } else if (mode == "time_window") {
+    # every measurement on one day between two hours — no thinning
+    return(
+      base %>%
+        filter(as_date(datetime) == as_date(window_day),
+               hour >= window_start_hour,
+               hour <  window_end_hour) %>%
+        arrange(datetime)
+    )
   } else {
-    stop("mode must be 'day_of_month', 'date_range', or 'single_day'")
+    stop("mode must be 'day_of_month', 'date_range', 'single_day', or 'time_window'")
   }
   
+  # the other three modes thin to one observation per day near target_hour
   base %>%
     mutate(date_only = as_date(datetime),
            mins_from_target = abs((hour * 60 + minute) - target_hour * 60)) %>%
@@ -214,7 +229,7 @@ comparison_plot <- ggplot(data = plot_data,
                                         group = interaction(start_time, leg))) +
   geom_path(linewidth = 0.6) +
   scale_y_reverse() +
-  coord_cartesian(xlim = c(10, 13)) +
+  coord_cartesian(xlim = c(10, 12)) +
   scale_linetype_manual(values = c(down = "solid", up = "dashed"),
                         labels = c(down = "down", up = "up")) +
   labs(x = "Temperature (°C)", y = "Depth below well top (m)",
