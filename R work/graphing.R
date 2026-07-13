@@ -90,7 +90,8 @@ p4 = P1_level %>%
   scale_color_manual(values = pal2) +
   labs(title = "Bridge Water Height, Downstream SPC, & P5 Well and Creek SPC") + 
   theme_bw()
-  print(p4)   
+print(p4)   
+
 
 
 df_full %>% 
@@ -104,3 +105,17 @@ p5 = ggplot(manual %>% filter(Location == "P1" | Location == "C1"), aes(x = Date
   theme_bw()
 print(p5)
 
+df_full %>% 
+  filter(Site == "P5" | Site == "P5_creek_cond") %>% 
+  ggplot(aes(x = `Date-Time`, y = `Specific Conductivity`, color = Site)) + 
+  geom_line()
+
+for(num in seq_along(1:5)) {
+  data = manual %>% filter(Location == paste0("P", num) | Location == paste0("C", num))
+  p = ggplot(data, aes(x = Date, y = SPC, color = Location)) + 
+    geom_point() + 
+    geom_line() +
+    labs(title = paste0("SPC Between Creek and Well at Site ", num)) +
+    theme_bw()
+  print(p)
+}
