@@ -181,7 +181,7 @@ index <- build_file_index(folder_id)
 
 
 which_channel <- "1"          # keep at 1 for now (3 is in another folder)
-target_hour   <- 12           # hour of day (UTC, 0-23) to sample near, e.g. 12 = noon
+target_hour   <- 20           # hour of day (UTC, 0-23) to sample near, e.g. 12 = noon
 
 # how to choose which days: pick ONE mode by setting it to TRUE (set other to FALSE)
 mode_day_of_month <- TRUE     # one observation per month, on a chosen day of the month
@@ -239,7 +239,7 @@ dat %>%
     scale_y_reverse() +
     xlim(0, 25) +
     labs(x = "Temperature (°C)", y = "Depth (m)", color = "month",
-         title = "S1 — winter days 25-26") +
+         title = "15th of Every Month Nov 2025-Mar 2026") +
     theme_bw()
 
 nrow(picks)
