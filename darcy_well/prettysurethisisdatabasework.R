@@ -162,6 +162,16 @@ add_depth <- function(df, channel_maps) {
     ungroup()
 }
 
+# colors a profile by meteorological season from its month
+add_season <- function(df) {
+  df %>%
+    mutate(season = case_when(
+      month(datetime) %in% c(12, 1, 2) ~ "winter",
+      month(datetime) %in% c(3, 4, 5)  ~ "spring",
+      month(datetime) %in% c(6, 7, 8)  ~ "summer",
+      TRUE                             ~ "fall"))
+}
+
 
 # run it 
 
@@ -175,72 +185,31 @@ channel_maps <- split(depth_raw, depth_raw$channel_name)
 ## TAKES A LONG TIME - builds the queryable filename index once per session
 index <- build_file_index(folder_id)
 
-#######################################################
-#  USER SETTINGS — edit these to choose what data you want
-#######################################################
+# pick the 15th of every month, channel 1, nearest noon
+picks <- index %>%
+  filter(channel == "1", day == 15) %>%
+  mutate(date_only = as_date(datetime),
+         mins_from_target = abs((hour * 60 + minute) - 12 * 60)) %>%
+  group_by(date_only) %>%
+  slice_min(mins_from_target, n = 1, with_ties = FALSE) %>%
+  ungroup() %>%
+  select(-date_only, -mins_from_target)
 
-
-which_channel <- "1"          # keep at 1 for now (3 is in another folder)
-target_hour   <- 20           # hour of day (UTC, 0-23) to sample near, e.g. 12 = noon
-
-# how to choose which days: pick ONE mode by setting it to TRUE (set other to FALSE)
-mode_day_of_month <- TRUE     # one observation per month, on a chosen day of the month
-mode_date_range   <- FALSE    # every day between two dates
-
-# settings for mode_day_of_month:
-day_of_month <- 15            # e.g. 15 = the 15th of each month
-
-# settings for mode_date_range:
-range_start <- "2025-10-01"   # "YYYY-MM-DD"
-range_end   <- "2025-10-31"
-
-#######################################################
-#  (you shouldn't need to edit below here)
-#######################################################
-
-
-# builds the file selection from your settings above
-pick_files <- function() {
-  base <- index %>% filter(channel == which_channel)
-  
-  if (mode_day_of_month) {
-    base <- base %>% filter(day == day_of_month)
-  } else if (mode_date_range) {
-    base <- base %>%
-      filter(as_date(datetime) >= as_date(range_start),
-             as_date(datetime) <= as_date(range_end))
-  }
-  
-  # keep the one measurement nearest the target hour on each day
-  base %>%
-    mutate(date_only = as_date(datetime),
-           mins_from_target = abs((hour * 60 + minute) - target_hour * 60)) %>%
-    group_by(date_only) %>%
-    slice_min(mins_from_target, n = 1, with_ties = FALSE) %>%
-    ungroup() %>%
-    select(-date_only, -mins_from_target)
-}
-
-picks <- pick_files()
-
-# quick check - what did you get?
-cat("selected", nrow(picks), "files\n")
-picks %>% distinct(as_date(datetime)) %>% arrange(`as_date(datetime)`) %>% print(n = 50)
+nrow(picks)   # how many months you got
 
 # fetch, label, add depth
 dat <- fetch_and_parse(picks) %>% add_boreholes() %>% add_depth(channel_maps)
 
 # plots temperature against real depth for s1, one line per measurement time
 dat %>%
-    filter(borehole == "S1") %>%
-    mutate(month_label = format(datetime, "%Y-%m")) %>%
-    ggplot(aes(TMP, depth_m, group = start_time, color = month_label)) +
-    geom_path(linewidth = 0.5) +
-    scale_y_reverse() +
-    xlim(0, 25) +
-    labs(x = "Temperature (°C)", y = "Depth (m)", color = "month",
-         title = "15th of Every Month Nov 2025-Mar 2026") +
-    theme_bw()
+  filter(borehole == "S1") %>%
+  mutate(month_label = format(datetime, "%Y-%m")) %>%
+  ggplot(aes(TMP, depth_m, group = start_time, color = month_label)) +
+  geom_path(linewidth = 0.5) +
+  scale_y_reverse() +
+  labs(x = "Temperature (°C)", y = "Depth (m)", color = "month",
+       title = "S1 — 15th of each month") +
+  theme_bw()
 
 nrow(picks)
 range(index$datetime, na.rm = TRUE)

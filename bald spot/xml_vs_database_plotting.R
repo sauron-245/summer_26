@@ -1,3 +1,5 @@
+
+
 library(googledrive)
 library(xml2)
 library(dplyr)
@@ -232,18 +234,123 @@ dat <- fetch_and_parse(picks) %>% add_boreholes() %>% add_depth(channel_maps)
 
 # plots temperature against real depth for s1, one line per measurement time
 dat %>%
-    filter(borehole == "S1") %>%
-    mutate(month_label = format(datetime, "%Y-%m")) %>%
-    ggplot(aes(TMP, depth_m, group = start_time, color = month_label)) +
-    geom_path(linewidth = 0.5) +
-    scale_y_reverse() +
-    xlim(0, 25) +
-    labs(x = "Temperature (°C)", y = "Depth (m)", color = "month",
-         title = "15th of Every Month Nov 2025-Mar 2026") +
-    theme_bw()
+  filter(borehole == "S1") %>%
+  mutate(month_label = format(datetime, "%Y-%m")) %>%
+  ggplot(aes(TMP, depth_m, group = start_time, color = month_label)) +
+  geom_path(linewidth = 0.5) +
+  scale_y_reverse() +
+  xlim(0, 25) +
+  scale_color_viridis_d(option = "viridis") +
+  labs(x = "Temperature (°C)", y = "Depth (m)", color = "month",
+       title = "15th of Every Month Nov 2025-Mar 2026") +
+  theme_bw()
 
 nrow(picks)
 range(index$datetime, na.rm = TRUE)
 index %>% filter(channel == "1") %>% count(as_date(datetime)) %>% head(20)
 
 
+
+# connects to the dts postgres database (read-only)
+connect_dts <- function() {
+  dbConnect(RPostgres::Postgres(),
+            dbname = "dts_db", host = "dts.physics.carleton.edu",
+            port = "5432", user = "dts_user_ro",
+            password = "$$N0th1ng5p3c14l$$")
+}
+
+
+# =====================================================================
+#  PART 1 — database: 15th of every month in 2022 and 2023, S1 only
+# =====================================================================
+
+# pulls channel-1 baldspot points on the 15th of each month across 2022-2023,
+# keeping real depth straight from the database
+get_db_15ths <- function() {
+  con <- connect_dts()
+  on.exit(dbDisconnect(con), add = TRUE)
+  
+  q <- "
+    SELECT M.id AS measurement_id, M.datetime_utc,
+           D.laf_m, D.depth_m, D.temperature_c
+    FROM dts_data D
+    INNER JOIN measurement M ON M.id = D.measurement_id
+    INNER JOIN channel H ON M.channel_id = H.id
+    WHERE H.channel_name = 'channel 1'
+      AND H.fiber_topology_name = 'baldspot'
+      AND date_part('day', M.datetime_utc) = 15
+      AND date_part('year', M.datetime_utc) IN (2022, 2023)
+    ORDER BY M.datetime_utc, D.laf_m;"
+  
+  dbGetQuery(con, q) %>% as_tibble()
+}
+
+# keeps the measurement nearest noon each day, clips to S1, standardizes columns
+prep_db <- function(df, target_hour = 12) {
+  df %>%
+    mutate(datetime = as_datetime(datetime_utc, tz = "UTC"),
+           date_only = as_date(datetime),
+           hour = hour(datetime), minute = minute(datetime),
+           mins_from_target = abs((hour * 60 + minute) - target_hour * 60)) %>%
+    group_by(date_only) %>%
+    filter(measurement_id == measurement_id[which.min(mins_from_target)]) %>%
+    ungroup() %>%
+    filter(laf_m > 230.3, laf_m < 388.8) %>%          # S1 window
+    transmute(datetime,
+              depth_m,
+              temperature_c,
+              obs_id = format(datetime, "%Y-%m-%d %H:%M"),
+              month_label = format(datetime, "%Y-%m"),
+              source = "database")
+}
+
+
+# =====================================================================
+#  PART 2 — your 2025 XML result (already in `dat` from your workflow)
+# =====================================================================
+#  Run your Google Drive workflow first so `dat` exists with S1 labeled and
+#  depth_m added. This standardizes it to the same columns as the database side.
+
+prep_xml <- function(dat) {
+  dat %>%
+    filter(borehole == "S1") %>%
+    transmute(datetime,
+              depth_m,
+              temperature_c = TMP,
+              obs_id = format(datetime, "%Y-%m-%d %H:%M"),
+              month_label = format(datetime, "%Y-%m"),
+              source = "xml (2025)")
+}
+
+
+# =====================================================================
+#  PART 3 — combine and plot
+# =====================================================================
+
+db_s1  <- get_db_15ths() %>% prep_db()
+xml_s1 <- prep_xml(dat)          # dat must already exist from your XML workflow
+
+combined <- bind_rows(db_s1, xml_s1)
+
+library(dplyr)
+library(ggplot2)
+
+plot_df <- combined %>%
+  mutate(
+    month = factor(lubridate::month(datetime)),   # 1-12, color
+    linetype_src = if_else(source == "xml (2025)", "xml", "database")
+  )
+
+
+ggplot(plot_df, aes(temperature_c, depth_m,
+                    group = obs_id, color = month)) +
+  geom_path(aes(linewidth = linetype_src, alpha = linetype_src)) +
+  scale_y_reverse() +
+  coord_cartesian(xlim = c(5, 20)) +
+  scale_color_viridis_d(option = "viridis") +
+  scale_linewidth_manual(values = c(database = 0.4, xml = .9)) +
+  scale_alpha_manual(values = c(database = .9, xml = .35)) +
+  labs(x = "Temperature (°C)", y = "Depth (m)",
+       color = "month", linewidth = "source", alpha = "source",
+       title = "Bald Spot S1 — 15th of each month, colored by month") +
+  theme_bw()
