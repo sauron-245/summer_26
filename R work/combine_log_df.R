@@ -5,7 +5,7 @@
 #     a. piezometers: hobo name alone (e.g. 'P3')                                  
 #     b. creek temp monitors: hobo name plus '_creek' (e.g. P5_creek)              
 #     c. creek conductivity monitors: same as temp plus _cond (e.g. P5_creek_cond) 
-#     d. Downstream monitor: 'Dwnstrm'                                             
+#     d. Downstream monitor: 'Dwnstrm'; Spring: 'Spring'                                             
 # 4. In body of script, add all filenames in 'hobos/hobos_upload' to the 'hobos_week'      
 #    vector in quotation marks (e.g. hobos_week = c("P1", "P3", "P5_creek")). If you're
 #    updating data for all monitors, change both for loops at the bottom of the script to 
@@ -25,17 +25,17 @@ library(lubridate)
 library(readxl)
 library(ggplot2)
 
-hobos_all = c("Dwnstrm", "P1", "P1_creek", "P2", "P2_creek", "P3", "P4", "P4_creek", "P5", "P5_creek", "P5_creek_cond") # Default option for all HOBO monitors. 
+hobos_all = c("Dwnstrm", "P1", "P1_creek", "P2", "P2_creek", "P3", "P3_creek_cond", "Spring", "P4", "P4_creek", "P5", "P5_creek", "P5_creek_cond") # Default option for all HOBO monitors. 
 
 update_hobo_log = function(site) {
   cols_to_check = c("Date-Time", "Temperature", "Temperature , °C", "Electrical Conductivity", "Specific Conductivity", "Salinity", "Total Dissolved Solids")
   
   log_standing <- read_csv(paste0("hobos/hobos_running/", site, "_current.csv")) %>% # Running total of log data
-    mutate(`Date-Time` = ymd_hms(`Date-Time`))
+    mutate(`Date-Time` = as.POSIXct(`Date-Time`))
   log_new <- read_excel(paste0("hobos/hobos_upload/", site, ".xlsx")) %>%  # Most recently downloaded data
     rename_with(~ trimws(sub("\\(.*$", "", .x))) %>% # Correctly format column names and get rid of metadata columns
     select(any_of(cols_to_check)) %>%  # References list of columns of interest and selects just columns containing real data, removing metadata/empty columns
-    mutate(`Date-Time` = ymd_hms(`Date-Time`))
+    mutate(`Date-Time` = as.POSIXct(`Date-Time`))
   
   if (length(names(log_new)) == 0) {
     stop(paste0("Check column names/format at site ", site, ".")) # This will hopefully catch issues caused by mismatched column names between the running .csv and newly uploaded data
@@ -61,7 +61,7 @@ update_hobo_log = function(site) {
   write_csv(log_standing_updated, paste0("hobos/hobos_running/", site, "_current.csv")) # Adds new data and overwrites existing .csv
 }
 
-hobos_week = c("P1")
+hobos_week = c("P4_creek", "P5", "P5_creek", "P5_creek_cond") # Default option for all HOBO monitors. 
 
 for (hobo in hobos_week) {
   update_hobo_log(hobo)
@@ -78,7 +78,7 @@ check_csv = function(site) { # Use this to make graphs of temperature over time.
   print(p)
   }
 
-for (hobo in hobos_week) {
+for (hobo in hobos_all) {
   check_csv(hobo)
 }
 
