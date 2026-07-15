@@ -3,11 +3,13 @@ library(lubridate)
 library(pracma)
 library(scico)
 library(RColorBrewer)
+library(rio)
 
 sites = c("Dwnstrm", "P1", "P2", "P3", "P4", "P5", "P5_creek_cond") # Default option for all HOBO monitors. 
 dfs = list()
 level = read_csv("dtw/dtw_formatted/Bridge_formatted.csv")
-
+all_sheets = import_list("Well_Sampling_Data_ALL.xlsx")
+manual = bind_rows(all_sheets, .id = "Site")
 manual = read_csv("manual_to_dl - Sheet1.csv") %>% 
   # drop_na() %>%
   rename(SPC = `SPC bottom before`) 
@@ -119,3 +121,7 @@ for(num in seq_along(1:5)) {
     theme_bw()
   print(p)
 }
+
+
+
+  
