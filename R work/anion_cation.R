@@ -1,6 +1,6 @@
 library(tidyverse)
 library(lubridate)
-
+library(RColorBrewer)
 
 cations = read_csv("Creek and Well Cations - Sheet1.csv")
 
@@ -8,7 +8,7 @@ cations = cations %>%
   mutate(
     MeasurementDate = mdy(MeasurementDate), 
     Date = mdy(Date),
-    Calcium = as.numeric(Calcium), Magnesium = as.numeric(Magnesium), Potassium = as.numeric(Potassium) 
+    Calcium = as.numeric(Calcium), Magnesium = as.numeric(Magnesium), Potassium = as.numeric(Potassium), Sodium = as.numeric(Sodium) 
   )
 
 anions = read_csv("Creek and Well Anion Data - newdatasorted.csv")
@@ -63,8 +63,19 @@ data = anions %>%
   group_by(Date_full)
 
 
-
+# pal2 = brewer.pal(n = 4, "Set2")[1:10]
 cations %>% 
-  filter(str_detect(Well, "P1"), PumpTest_Creek != "C") %>% 
+  filter(str_detect(Well, "P1"), PumpTest_Creek != "C", Dilution == "1:1") %>% 
   ggplot(aes(x = Date, y = Potassium, color = PumpTest_Creek)) + 
   geom_point()
+
+anions %>% 
+  filter(!is.na(SampleNum), PumpTest_Creek != "C") %>%
+  drop_na() %>% 
+  # group_by(Well, Date) %>% 
+  # summarize(avg = mean(Flouride)) %>% 
+  ggplot(aes(x = Date, y = Flouride, color = Well)) +
+  geom_point() + 
+  # geom_line() +
+  # scale_color_manual(values = pal2) +
+  theme_bw()
