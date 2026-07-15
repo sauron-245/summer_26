@@ -238,6 +238,7 @@ dat %>%
     geom_path(linewidth = 0.5) +
     scale_y_reverse() +
     xlim(0, 25) +
+    scale_color_viridis_d(option = "viridis") +
     labs(x = "Temperature (°C)", y = "Depth (m)", color = "month",
          title = "15th of Every Month Nov 2025-Mar 2026") +
     theme_bw()

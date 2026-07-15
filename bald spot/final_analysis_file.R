@@ -1,7 +1,7 @@
 ############################################################
 #  Bald Spot DTS — ANALYSES
 #
-#  Run 01_setup.R FIRST (once per session). Then run any section below
+#  Run final_setup_file.R FIRST (once per session). Then run any section below
 #  independently — each has its own settings and its own dataset, so they
 #  don't step on each other.
 #
@@ -20,7 +20,7 @@ library(ggplot2)
 ############################################################
 
 # --- settings ---
-a_borehole <- "S1"
+a_borehole <- "S2"
 a_day      <- 15      # day of month
 a_hour     <- 12      # hour (UTC) to sample near
 a_years_db <- c(2019, 2020, 2021, 2022, 2023)   # database years to include
@@ -60,8 +60,8 @@ ggplot(a_data, aes(temperature_c, depth_m, group = obs_id, color = month)) +
 ############################################################
 
 # --- settings ---
-b_borehole <- "S1"
-b_months   <- c(6)     # which months to compare; e.g. c(1) or c(1,4,7,10)
+b_borehole <- "S2"
+b_months   <- c(1,2,3,4,5,6,7,8,9,10,11,12)     # which months to compare; e.g. c(1) or c(1,4,7,10)
 b_day      <- 15
 b_hour     <- 12
 rm(list = intersect(c("b_db", "b_xml", "b_data"), ls()))
@@ -172,7 +172,7 @@ d_years_db <- c(2019, 2020, 2021, 2022, 2023)
 
 # the depth ranges you want to compare — edit these
 DEPTH_INTERVALS <- list(
-  pinch     = c(22.0, 20.7),
+  pinch     = c(20.9, 21.6),
   non_pinch = c(29.8, 30.6)
 )
 

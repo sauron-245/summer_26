@@ -405,4 +405,274 @@ ggplot(daily_all, aes(date, mean_temp, color = source)) +
   theme_bw() +
   theme(legend.position = "bottom")
 
+############################################################
+#  Bald Spot S1 — month comparison across years
+#
+#  Builds a dataset of the 15th of whichever months you choose, pulling from
+#  BOTH the database (older years) and the xml on google drive (recent years),
+#  then plots them faceted by month and colored by year so you can see whether
+#  e.g. Januaries are changing over time.
+#
+#  Requires: connect_dts(), build_file_index(), fetch_and_parse(),
+#            add_boreholes(), add_depth(), channel_maps, index
+#            (all from your main workflow — run that first)
+############################################################
+ 
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+ 
+ 
+############################################################
+#  USER SETTINGS — month comparison
+############################################################
+ 
+# which months to compare (1 = Jan, 12 = Dec). any list you like.
+compare_months <- c(1)              # e.g. c(1) or c(1, 4, 7, 10)
+ 
+# which day of those months
+compare_day <- 15
+ 
+# hour of day (UTC) to sample near
+compare_hour <- 12
+ 
+# which borehole
+compare_borehole <- "S1"
+ 
+# laf window for that borehole (S1 defaults shown)
+compare_laf_min <- 230.3
+compare_laf_max <- 388.8
+ 
+############################################################
+#  (you shouldn't need to edit below here)
+############################################################
+ 
+ 
+# pulls the chosen day/months from the database, across every year on record
+get_db_months <- function(months, day, laf_min, laf_max) {
+  con <- connect_dts()
+  on.exit(dbDisconnect(con), add = TRUE)
+ 
+  q <- "
+    SELECT M.id AS measurement_id, M.datetime_utc,
+           D.laf_m, D.depth_m, D.temperature_c
+    FROM dts_data D
+    INNER JOIN measurement M ON M.id = D.measurement_id
+    INNER JOIN channel H ON M.channel_id = H.id
+    WHERE H.channel_name = 'channel 1'
+      AND H.fiber_topology_name = 'baldspot'
+      AND date_part('day', M.datetime_utc) = $1
+      AND date_part('month', M.datetime_utc) = ANY($2)
+      AND D.laf_m > $3 AND D.laf_m < $4
+    ORDER BY M.datetime_utc, D.laf_m;"
+ 
+  dbGetQuery(con, q, params = list(day, months, laf_min, laf_max)) %>% as_tibble()
+}
+ 
+# keeps the observation nearest the target hour on each day, standardizes columns
+prep_db_months <- function(df, target_hour) {
+  df %>%
+    mutate(datetime = as_datetime(datetime_utc, tz = "UTC"),
+           date_only = as_date(datetime),
+           hour = hour(datetime), minute = minute(datetime),
+           mins_from_target = abs((hour * 60 + minute) - target_hour * 60)) %>%
+    group_by(date_only) %>%
+    filter(measurement_id == measurement_id[which.min(mins_from_target)]) %>%
+    ungroup() %>%
+    transmute(datetime, depth_m, temperature_c,
+              obs_id = format(datetime, "%Y-%m-%d %H:%M"),
+              source = "database")
+}
+ 
+# picks the same day/months out of the drive index, fetches and preps them
+get_xml_months <- function(months, day, target_hour, borehole) {
+  picks <- index %>%
+    filter(channel == "1", day(datetime) == !!day, month(datetime) %in% !!months) %>%
+    mutate(date_only = as_date(datetime),
+           mins_from_target = abs((hour * 60 + minute) - target_hour * 60)) %>%
+    group_by(date_only) %>%
+    slice_min(mins_from_target, n = 1, with_ties = FALSE) %>%
+    ungroup() %>%
+    select(-date_only, -mins_from_target)
+ 
+  cat("xml: selected", nrow(picks), "files\n")
+  if (nrow(picks) == 0) return(NULL)
+ 
+  fetch_and_parse(picks) %>%
+    add_boreholes() %>%
+    add_depth(channel_maps) %>%
+    filter(borehole == !!borehole) %>%
+    transmute(datetime, depth_m, temperature_c = TMP,
+              obs_id = format(datetime, "%Y-%m-%d %H:%M"),
+              source = "xml")
+}
+ 
+ 
+# --- build the comparison dataset -------------------------------------------
+ 
+db_part  <- get_db_months(compare_months, compare_day,
+                          compare_laf_min, compare_laf_max) %>%
+            prep_db_months(compare_hour)
+ 
+xml_part <- get_xml_months(compare_months, compare_day,
+                           compare_hour, compare_borehole)
+ 
+month_compare <- bind_rows(db_part, xml_part) %>%
+  mutate(year = factor(year(datetime)),
+         month_name = factor(month(datetime, label = TRUE, abbr = FALSE)))
+ 
+# what years did you actually get, per month?
+month_compare %>% distinct(month_name, year, source) %>% arrange(month_name, year) %>% print(n = 50)
+ 
+ 
+# --- plot: facet by month, color by year ------------------------------------
+ 
+ggplot(month_compare, aes(temperature_c, depth_m,
+                          group = obs_id, color = year, linetype = source)) +
+  geom_path(linewidth = 0.5) +
+  scale_y_reverse() +
+  coord_cartesian(xlim = c(5, 20)) +
+  scale_color_viridis_d(option = "viridis") +
+  scale_linetype_manual(values = c(database = "solid", xml = "dashed")) +
+  facet_wrap(~ month_name) +
+  labs(x = "Temperature (°C)", y = "Depth (m)",
+       color = "year", linetype = "source",
+       title = paste0(compare_borehole, " — day ", compare_day,
+                      " of each selected month, across years")) +
+  theme_bw()
 
+############################################################
+#  Bald Spot S1 — month comparison across years
+#
+#  Builds a dataset of the 15th of whichever months you choose, pulling from
+#  BOTH the database (older years) and the xml on google drive (recent years),
+#  then plots them faceted by month and colored by year so you can see whether
+#  e.g. Januaries are changing over time.
+#
+#  Requires: connect_dts(), build_file_index(), fetch_and_parse(),
+#            add_boreholes(), add_depth(), channel_maps, index
+#            (all from your main workflow — run that first)
+############################################################
+
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+
+
+############################################################
+#  USER SETTINGS — month comparison
+############################################################
+
+# which months to compare (1 = Jan, 12 = Dec). any list you like.
+compare_months <- c(1)              # e.g. c(1) or c(1, 4, 7, 10)
+
+# which day of those months
+compare_day <- 15
+
+# hour of day (UTC) to sample near
+compare_hour <- 12
+
+# which borehole
+compare_borehole <- "S1"
+
+# laf window for that borehole (S1 defaults shown)
+compare_laf_min <- 230.3
+compare_laf_max <- 388.8
+
+############################################################
+#  (you shouldn't need to edit below here)
+############################################################
+
+
+# pulls the chosen day/months from the database, across every year on record
+get_db_months <- function(months, day, laf_min, laf_max) {
+  con <- connect_dts()
+  on.exit(dbDisconnect(con), add = TRUE)
+  
+  q <- "
+    SELECT M.id AS measurement_id, M.datetime_utc,
+           D.laf_m, D.depth_m, D.temperature_c
+    FROM dts_data D
+    INNER JOIN measurement M ON M.id = D.measurement_id
+    INNER JOIN channel H ON M.channel_id = H.id
+    WHERE H.channel_name = 'channel 1'
+      AND H.fiber_topology_name = 'baldspot'
+      AND date_part('day', M.datetime_utc) = $1
+      AND date_part('month', M.datetime_utc) = ANY($2)
+      AND D.laf_m > $3 AND D.laf_m < $4
+    ORDER BY M.datetime_utc, D.laf_m;"
+  
+  dbGetQuery(con, q, params = list(day, months, laf_min, laf_max)) %>% as_tibble()
+}
+
+# keeps the observation nearest the target hour on each day, standardizes columns
+prep_db_months <- function(df, target_hour) {
+  df %>%
+    mutate(datetime = as_datetime(datetime_utc, tz = "UTC"),
+           date_only = as_date(datetime),
+           hour = hour(datetime), minute = minute(datetime),
+           mins_from_target = abs((hour * 60 + minute) - target_hour * 60)) %>%
+    group_by(date_only) %>%
+    filter(measurement_id == measurement_id[which.min(mins_from_target)]) %>%
+    ungroup() %>%
+    transmute(datetime, depth_m, temperature_c,
+              obs_id = format(datetime, "%Y-%m-%d %H:%M"),
+              source = "database")
+}
+
+# picks the same day/months out of the drive index, fetches and preps them
+get_xml_months <- function(months, day, target_hour, borehole) {
+  picks <- index %>%
+    filter(channel == "1", day(datetime) == !!day, month(datetime) %in% !!months) %>%
+    mutate(date_only = as_date(datetime),
+           mins_from_target = abs((hour * 60 + minute) - target_hour * 60)) %>%
+    group_by(date_only) %>%
+    slice_min(mins_from_target, n = 1, with_ties = FALSE) %>%
+    ungroup() %>%
+    select(-date_only, -mins_from_target)
+  
+  cat("xml: selected", nrow(picks), "files\n")
+  if (nrow(picks) == 0) return(NULL)
+  
+  fetch_and_parse(picks) %>%
+    add_boreholes() %>%
+    add_depth(channel_maps) %>%
+    filter(borehole == !!borehole) %>%
+    transmute(datetime, depth_m, temperature_c = TMP,
+              obs_id = format(datetime, "%Y-%m-%d %H:%M"),
+              source = "xml")
+}
+
+
+# --- build the comparison dataset -------------------------------------------
+
+db_part  <- get_db_months(compare_months, compare_day,
+                          compare_laf_min, compare_laf_max) %>%
+  prep_db_months(compare_hour)
+
+xml_part <- get_xml_months(compare_months, compare_day,
+                           compare_hour, compare_borehole)
+
+month_compare <- bind_rows(db_part, xml_part) %>%
+  mutate(year = factor(year(datetime)),
+         month_name = factor(month(datetime, label = TRUE, abbr = FALSE)))
+
+# what years did you actually get, per month?
+month_compare %>% distinct(month_name, year, source) %>% arrange(month_name, year) %>% print(n = 50)
+
+
+# --- plot: facet by month, color by year ------------------------------------
+
+ggplot(month_compare, aes(temperature_c, depth_m,
+                          group = obs_id, color = year, linetype = source)) +
+  geom_path(linewidth = 0.5) +
+  scale_y_reverse() +
+  coord_cartesian(xlim = c(5, 20)) +
+  scale_color_viridis_d(option = "viridis") +
+  scale_linetype_manual(values = c(database = "solid", xml = "dashed")) +
+  facet_wrap(~ month_name) +
+  labs(x = "Temperature (°C)", y = "Depth (m)",
+       color = "year", linetype = "source",
+       title = paste0(compare_borehole, " — day ", compare_day,
+                      " of each selected month, across years")) +
+  theme_bw()

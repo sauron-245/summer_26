@@ -5,7 +5,7 @@
 #     a. piezometers: hobo name alone (e.g. 'P3')                                  
 #     b. creek temp monitors: hobo name plus '_creek' (e.g. P5_creek)              
 #     c. creek conductivity monitors: same as temp plus _cond (e.g. P5_creek_cond) 
-#     d. Downstream monitor: 'Dwnstrm'; Spring: 'Spring'                                             
+#     d. Downstream monitor: 'Dwnstrm'; Spring: 'Spring'; Midstream: 'Mdstrm'                                            
 # 4. In body of script, add all filenames in 'hobos/hobos_upload' to the 'hobos_week'      
 #    vector in quotation marks (e.g. hobos_week = c("P1", "P3", "P5_creek")). If you're
 #    updating data for all monitors, change both for loops at the bottom of the script to 
@@ -23,9 +23,8 @@
 library(tidyverse)
 library(lubridate)
 library(readxl)
-library(ggplot2)
 
-hobos_all = c("Dwnstrm", "P1", "P1_creek", "P2", "P2_creek", "P3", "P3_creek_cond", "Spring", "P4", "P4_creek", "P5", "P5_creek", "P5_creek_cond") # Default option for all HOBO monitors. 
+hobos_all = c("Dwnstrm", "P1", "P1_creek", "P2", "P2_creek", "P3", "Mdstrm", "Spring", "P4", "P4_creek", "P5", "P5_creek", "P5_creek_cond") # Default option for all HOBO monitors. 
 
 update_hobo_log = function(site) {
   cols_to_check = c("Date-Time", "Temperature", "Temperature , °C", "Electrical Conductivity", "Specific Conductivity", "Salinity", "Total Dissolved Solids")
@@ -81,4 +80,5 @@ check_csv = function(site) { # Use this to make graphs of temperature over time.
 for (hobo in hobos_all) {
   check_csv(hobo)
 }
+
 
