@@ -186,15 +186,15 @@ which_channel <- "1"          # keep at 1 for now (3 is in another folder)
 target_hour   <- 20           # hour of day (UTC, 0-23) to sample near, e.g. 12 = noon
 
 # how to choose which days: pick ONE mode by setting it to TRUE (set other to FALSE)
-mode_day_of_month <- TRUE     # one observation per month, on a chosen day of the month
-mode_date_range   <- FALSE    # every day between two dates
+mode_day_of_month <- FALSE     # one observation per month, on a chosen day of the month
+mode_date_range   <- TRUE    # every day between two dates
 
 # settings for mode_day_of_month:
 day_of_month <- 15            # e.g. 15 = the 15th of each month
 
 # settings for mode_date_range:
 range_start <- "2025-10-01"   # "YYYY-MM-DD"
-range_end   <- "2025-10-31"
+range_end   <- "2026-10-31"
 
 #######################################################
 #  (you shouldn't need to edit below here)
@@ -279,7 +279,7 @@ get_db_15ths <- function() {
     WHERE H.channel_name = 'channel 1'
       AND H.fiber_topology_name = 'baldspot'
       AND date_part('day', M.datetime_utc) = 15
-      AND date_part('year', M.datetime_utc) IN (2022, 2023)
+      AND date_part('year', M.datetime_utc) IN (2019, 2020, 2021, 2022, 2023)
     ORDER BY M.datetime_utc, D.laf_m;"
   
   dbGetQuery(con, q) %>% as_tibble()
@@ -332,8 +332,7 @@ xml_s1 <- prep_xml(dat)          # dat must already exist from your XML workflow
 
 combined <- bind_rows(db_s1, xml_s1)
 
-library(dplyr)
-library(ggplot2)
+
 
 plot_df <- combined %>%
   mutate(
@@ -348,9 +347,62 @@ ggplot(plot_df, aes(temperature_c, depth_m,
   scale_y_reverse() +
   coord_cartesian(xlim = c(5, 20)) +
   scale_color_viridis_d(option = "viridis") +
-  scale_linewidth_manual(values = c(database = 0.4, xml = .9)) +
+  scale_linewidth_manual(values = c(database = 0.4, xml = .4)) +
   scale_alpha_manual(values = c(database = .9, xml = .35)) +
   labs(x = "Temperature (°C)", y = "Depth (m)",
        color = "month", linewidth = "source", alpha = "source",
        title = "Bald Spot S1 — 15th of each month, colored by month") +
   theme_bw()
+
+
+
+
+# --- database: mean daily temp per observation, S1, all available dates ------
+# (broaden the earlier query to all years, not just 2022-2023, to match Fig 3)
+get_db_alltime <- function() {
+  con <- connect_dts()
+  on.exit(dbDisconnect(con), add = TRUE)
+  q <- "
+    SELECT M.datetime_utc, D.laf_m, D.temperature_c
+    FROM dts_data D
+    INNER JOIN measurement M ON M.id = D.measurement_id
+    INNER JOIN channel H ON M.channel_id = H.id
+    WHERE H.channel_name = 'channel 1'
+      AND H.fiber_topology_name = 'baldspot'
+      AND D.laf_m > 230.3 AND D.laf_m < 388.8   -- S1 window
+    ORDER BY M.datetime_utc;"
+  dbGetQuery(con, q) %>% as_tibble()
+}
+
+db_daily <- get_db_alltime() %>%
+  mutate(date = as_date(datetime_utc)) %>%
+  group_by(date) %>%
+  summarize(mean_temp = mean(temperature_c, na.rm = TRUE), .groups = "drop") %>%
+  mutate(source = "database")
+
+# --- xml: same reduction from your `dat` (S1, raw TMP) -----------------------
+xml_daily <- dat %>%
+  filter(borehole == "S1", TMP > -20, TMP < 120) %>%
+  mutate(date = as_date(datetime)) %>%
+  group_by(date) %>%
+  summarize(mean_temp = mean(TMP, na.rm = TRUE), .groups = "drop") %>%
+  mutate(source = "xml 2025")
+
+# --- combine and plot --------------------------------------------------------
+daily_all <- daily_all %>%
+
+
+ggplot(daily_all, aes(date, mean_temp, color = source)) +
+  geom_line(data = filter(daily_all, source == "database"),
+            linewidth = 0.4) +
+  geom_point(data = filter(daily_all, source != "database"),
+             size = 1.0, shape = 17) +
+  scale_color_manual(values = c("database" = "darkgrey",
+                                "xml 2025" = "red")) +
+  labs(x = "Year", y = "Mean borehole temperature (°C)",
+       color = NULL,
+       title = "Bald Spot S1 — mean daily temperature over time plus extra")
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+
