@@ -51,6 +51,8 @@ build_plot = function(df, site, metric) {
     mutate(PumpTest_Creek = ifelse(PumpTest_Creek == "B", "Well", "Creek")) %>% 
     group_by(Date_full, PumpTest_Creek) %>% 
     summarize(avg = mean(.data[[metric]], na.rm = TRUE), .groups = "drop") %>% 
+    
+    
     ggplot(aes(x = Date_full, y = avg, fill = PumpTest_Creek)) + 
       geom_path(aes(color = PumpTest_Creek)) + 
       geom_point(pch = 21, size = 2.5) + 
@@ -58,7 +60,11 @@ build_plot = function(df, site, metric) {
       theme(plot.subtitle = element_text(size = 10)) +
       scale_y_continuous(limits = c(0, 85)) +
       scale_x_date(limits = range(anions$Date_full, na.rm = TRUE), date_breaks = "4 months") +
-      labs(title = paste0(metric, " at ", site, ": well vs. Creek"), subtitle = "Well measurement taken before pumping", fill = "Location", x = "Date", y = "Concentration (ppm)")
+      labs(title = paste0(metric, " at ", site, ": well vs. Creek"),
+           subtitle = "Well measurement taken before pumping",
+           fill = "Location",
+           x = "Date",
+           y = "Concentration (ppm)")
 
   return(plot)
 }
@@ -96,19 +102,18 @@ Nitrates in the P1 well are meaningfully higher than P3 and P5; additionally, P1
 double_graph = function(site){
 anion_data = anions %>% 
   filter(PumpTest_Creek == "B", Well == site) %>% 
-    # mutate(PumpTest_Creek = ifelse(PumpTest_Creek == "B", "Well", "Creek")) %>% 
     summarize(avg_n = mean(Nitrate), avg_s = mean(Sulfate), avg_c = mean(Chloride), .by = Date_full)
-# summary(anion_data)
 spc_data = df_full %>% 
   filter(Site == site, `Date-Time` >= min(anion_data$Date_full), `Date-Time` <= max(anion_data$Date_full))
 
 p1 = ggplot(spc_data, aes(x = `Date-Time`, y = `Specific Conductivity`)) + 
   geom_line() + 
   theme_bw(base_size = 20) +
-  labs(title = paste0("SPC at ", site), x = "Date", y = "SPC (usm/cm)") 
-  # theme(plot.title = element_text(size = 15),
-  #       axis.title = element_text(size = 12),
-  #       axis.text = element_text(size = 10))
+  labs(title = paste0("SPC at ", site),
+       x = NULL,
+       y = "SPC (usm/cm)") +
+    theme(plot.margin = margin(0,5,-5,5),
+        plot.title.position = "plot")
 
 p2 = ggplot(anion_data) + 
   geom_line(aes(x = Date_full, y = avg_n, color = "Nitrate")) + 
@@ -119,14 +124,18 @@ p2 = ggplot(anion_data) +
   geom_point(aes(x = Date_full, y = avg_c, fill = "Chloride"), pch = 21, size = 2.5) + 
   theme_bw(base_size = 20) + 
   guides(color = "none") +
-  # theme(plot.title = element_text(size = 15),
-  #       axis.title = element_text(size = 12),
-  #       axis.text = element_text(size = 10)) +
-  labs(title = paste0("Nitrate, Sulfate, and Chloride at ", site), x = "Date", y = "Concentration (ppm)", fill = "Anion")
-p1 / p2
+  theme(plot.margin = margin(-5,5,0,5), 
+        plot.title.position = "plot") +
+  labs(title = NULL,
+      x = "Date", 
+      y = "Concentration (ppm)",
+      fill = "Anion")
+p1 / p2 + plot_layout(guides = "collect")
 }
 
-double_graph("P1")
+double_graph("P1")  
+double_graph("P3") 
+double_graph("P5") 
 ```
 
 
