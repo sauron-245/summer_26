@@ -22,7 +22,9 @@ library(plotly)
 
 # --- fixed settings ---------------------------------------------------------
 
-FOLDER_ID <- "12tkE_ITIb1XxKthTA4BVB965zs5w4sTe"   # channel 1 xml folder
+# the google drive folders holding the xml (one per channel)
+FOLDER_IDS <- c("1" = "12tkE_ITIb1XxKthTA4BVB965zs5w4sTe",   # channel 1
+                "3" = "1SeUUnrZ0CGNRo88OA_GUusndQCnY-7c5")   # channel 3
 
 # borehole laf windows
 BOREHOLE_LAF <- list(
@@ -70,8 +72,8 @@ laf_to_depth <- function(laf, channel_name, maps) {
   approx(x = m$laf_m, y = m$depth_m, xout = laf, rule = 2)$y
 }
 
-# generic database pull: any borehole, any day/month/year filter you pass as sql
-get_db_data <- function(where_clause, laf_min, laf_max) {
+# generic database pull: any channel, any borehole, any date filter as sql
+get_db_data <- function(where_clause, laf_min, laf_max, channel_name = "channel 1") {
   con <- connect_dts()
   on.exit(dbDisconnect(con), add = TRUE)
   q <- sprintf("
@@ -80,11 +82,12 @@ get_db_data <- function(where_clause, laf_min, laf_max) {
     FROM dts_data D
     INNER JOIN measurement M ON M.id = D.measurement_id
     INNER JOIN channel H ON M.channel_id = H.id
-    WHERE H.channel_name = 'channel 1'
+    WHERE H.channel_name = '%s'
       AND H.fiber_topology_name = 'baldspot'
       AND D.laf_m > %f AND D.laf_m < %f
       AND %s
-    ORDER BY M.datetime_utc, D.laf_m;", laf_min, laf_max, where_clause)
+    ORDER BY M.datetime_utc, D.laf_m;",
+               channel_name, laf_min, laf_max, where_clause)
   dbGetQuery(con, q) %>% as_tibble()
 }
 
@@ -195,9 +198,9 @@ add_depth <- function(df, maps) {
 }
 
 # standardizes xml output to the same columns the database side produces
-prep_xml <- function(df, borehole) {
+prep_xml <- function(df, bh) {
   df %>%
-    filter(borehole == !!borehole) %>%
+    filter(borehole == bh) %>%
     transmute(datetime, depth_m, temperature_c = TMP,
               obs_id = format(datetime, "%Y-%m-%d %H:%M"),
               source = "xml")
@@ -205,9 +208,9 @@ prep_xml <- function(df, borehole) {
 
 # one helper the analysis scripts use: pick xml files from the index by a
 # filter expression, then keep the obs nearest target_hour each day
-pick_xml <- function(filter_expr, target_hour = 12) {
+pick_xml <- function(filter_expr, target_hour = 12, channel_id = "1") {
   index %>%
-    filter(channel == "1") %>%
+    filter(channel == channel_id) %>%
     filter({{ filter_expr }}) %>%
     mutate(date_only = as_date(datetime),
            mins_from_target = abs((hour * 60 + minute) - target_hour * 60)) %>%
@@ -229,13 +232,16 @@ depth_raw <- get_depth_maps()
 channel_maps <- split(depth_raw, depth_raw$channel_name)
 
 message("indexing drive files (slow)...")
-index <- build_file_index(FOLDER_ID)
+index <- bind_rows(lapply(names(FOLDER_IDS), function(ch) {
+  message("  indexing channel ", ch, "...")
+  build_file_index(FOLDER_IDS[[ch]])
+}))
 
 cat("\nSETUP DONE\n")
 cat("  indexed", nrow(index), "xml files spanning",
     format(min(index$datetime, na.rm = TRUE)), "to",
     format(max(index$datetime, na.rm = TRUE)), "\n")
-cat("  depth maps for:", paste(names(channel_maps), collapse = ", "), "\n")
+print(index %>% count(channel))
 
 #############################################################
 #  Pinch-point analysis functions.
