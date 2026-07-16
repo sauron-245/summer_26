@@ -20,23 +20,30 @@ library(ggplot2)
 ############################################################
 
 # --- settings ---
-a_borehole <- "S2"
-a_day      <- 15      # day of month
-a_hour     <- 12      # hour (UTC) to sample near
-a_years_db <- c(2019, 2020, 2021, 2022, 2023)   # database years to include
+a_channel  <- "3"          # "1" or "3"
+a_borehole <- "S4"         # S1/S2/S3 are channel 1; S4/S5 are channel 3
+a_day      <- 15
+a_hour     <- 12
+a_years_db <- c(2019, 2020, 2021, 2022, 2023)
 
 # --- build ---
+rm(list = intersect(c("a_db", "a_xml", "a_data"), ls()))
 a_laf <- BOREHOLE_LAF[[a_borehole]]
 
 a_db <- get_db_data(
   sprintf("date_part('day', M.datetime_utc) = %d
            AND date_part('year', M.datetime_utc) IN (%s)",
           a_day, paste(a_years_db, collapse = ",")),
-  a_laf[1], a_laf[2]) %>%
+  a_laf[1], a_laf[2],
+  channel_name = paste("channel", a_channel)) %>%
   prep_db(a_hour)
 
-a_xml <- fetch_and_parse(pick_xml(day == a_day, a_hour)) %>%
-  add_boreholes() %>% add_depth(channel_maps) %>% prep_xml(a_borehole)
+a_picks <- pick_xml(day == a_day, a_hour, a_channel)
+cat("xml: selected", nrow(a_picks), "files\n")
+a_xml <- if (nrow(a_picks) > 0) {
+  fetch_and_parse(a_picks) %>%
+    add_boreholes() %>% add_depth(channel_maps) %>% prep_xml(a_borehole)
+} else NULL
 
 a_data <- bind_rows(a_db, a_xml) %>%
   mutate(month = factor(month(datetime)))
@@ -60,36 +67,34 @@ ggplot(a_data, aes(temperature_c, depth_m, group = obs_id, color = month)) +
 ############################################################
 
 # --- settings ---
-b_borehole <- "S2"
-b_months   <- c(1,2,3,4,5,6,7,8,9,10,11,12)     # which months to compare; e.g. c(1) or c(1,4,7,10)
+b_channel  <- "3"
+b_borehole <- "S5"
+b_months   <- c(1,2,3,4)
 b_day      <- 15
 b_hour     <- 12
-rm(list = intersect(c("b_db", "b_xml", "b_data"), ls()))
 
 # --- build ---
+rm(list = intersect(c("b_db", "b_xml", "b_data"), ls()))
 b_laf <- BOREHOLE_LAF[[b_borehole]]
 
 b_db <- get_db_data(
   sprintf("date_part('day', M.datetime_utc) = %d
            AND date_part('month', M.datetime_utc) IN (%s)",
           b_day, paste(b_months, collapse = ",")),
-  b_laf[1], b_laf[2]) %>%
+  b_laf[1], b_laf[2],
+  channel_name = paste("channel", b_channel)) %>%
   prep_db(b_hour)
 
-b_picks <- pick_xml(day == b_day & month %in% b_months, b_hour)
+b_picks <- pick_xml(day == b_day & month %in% b_months, b_hour, b_channel)
 cat("xml: selected", nrow(b_picks), "files\n")
-
 b_xml <- if (nrow(b_picks) > 0) {
   fetch_and_parse(b_picks) %>%
     add_boreholes() %>% add_depth(channel_maps) %>% prep_xml(b_borehole)
-} else {
-  NULL
-}
+} else NULL
 
 b_data <- bind_rows(b_db, b_xml) %>%
   mutate(year = factor(year(datetime)),
          month_name = month(datetime, label = TRUE, abbr = FALSE))
-
 # what years did you get?
 b_data %>% distinct(month_name, year, source) %>% arrange(month_name, year) %>% print(n = 50)
 
@@ -113,31 +118,35 @@ ggplotly(p)
 ############################################################
 
 # --- settings ---
-c_borehole   <- "S1"
-c_xml_start  <- "2025-10-01"    # xml date range to include
-c_xml_end    <- "2026-10-31"
-c_hour       <- 12
+c_channel   <- "3"
+c_borehole  <- "S4"
+c_xml_start <- "2025-10-01"
+c_xml_end   <- "2026-10-31"
+c_hour      <- 12
 
 # --- build ---
+rm(list = intersect(c("c_db", "c_xml", "c_data"), ls()))
 c_laf <- BOREHOLE_LAF[[c_borehole]]
 
-# database: every observation on record (dense, makes the seasonal curve)
-c_db <- get_db_data("TRUE", c_laf[1], c_laf[2]) %>%
+c_db <- get_db_data("TRUE", c_laf[1], c_laf[2],
+                    channel_name = paste("channel", c_channel)) %>%
   mutate(date = as_date(datetime_utc)) %>%
   group_by(date) %>%
   summarize(mean_temp = mean(temperature_c, na.rm = TRUE), .groups = "drop") %>%
   mutate(source = "database")
 
-# xml: one observation per day across your range
-c_xml <- fetch_and_parse(
-  pick_xml(as_date(datetime) >= as_date(c_xml_start) &
-             as_date(datetime) <= as_date(c_xml_end), c_hour)) %>%
-  add_boreholes() %>% add_depth(channel_maps) %>%
-  filter(borehole == c_borehole) %>%
-  mutate(date = as_date(datetime)) %>%
-  group_by(date) %>%
-  summarize(mean_temp = mean(TMP, na.rm = TRUE), .groups = "drop") %>%
-  mutate(source = "xml")
+c_picks <- pick_xml(as_date(datetime) >= as_date(c_xml_start) &
+                      as_date(datetime) <= as_date(c_xml_end), c_hour, c_channel)
+cat("xml: selected", nrow(c_picks), "files\n")
+c_xml <- if (nrow(c_picks) > 0) {
+  fetch_and_parse(c_picks) %>%
+    add_boreholes() %>% add_depth(channel_maps) %>%
+    filter(borehole == c_borehole) %>%
+    mutate(date = as_date(datetime)) %>%
+    group_by(date) %>%
+    summarize(mean_temp = mean(TMP, na.rm = TRUE), .groups = "drop") %>%
+    mutate(source = "xml")
+} else NULL
 
 c_data <- bind_rows(c_db, c_xml)
 
@@ -165,29 +174,35 @@ ggplot(c_data, aes(date, mean_temp, color = source)) +
 ############################################################
 
 # --- settings ---
-d_borehole <- "S1"
-d_day      <- 15      # sample the 15th of each month
+d_channel  <- "3"
+d_borehole <- "S4"
+d_day      <- 15
 d_hour     <- 12
 d_years_db <- c(2019, 2020, 2021, 2022, 2023)
 
-# the depth ranges you want to compare — edit these
 DEPTH_INTERVALS <- list(
   pinch     = c(20.9, 21.6),
   non_pinch = c(29.8, 30.6)
 )
 
-# --- build: monthly profiles from both sources ---
+# --- build ---
+rm(list = intersect(c("d_db", "d_xml", "d_all"), ls()))
 d_laf <- BOREHOLE_LAF[[d_borehole]]
 
 d_db <- get_db_data(
   sprintf("date_part('day', M.datetime_utc) = %d
            AND date_part('year', M.datetime_utc) IN (%s)",
           d_day, paste(d_years_db, collapse = ",")),
-  d_laf[1], d_laf[2]) %>%
+  d_laf[1], d_laf[2],
+  channel_name = paste("channel", d_channel)) %>%
   prep_db(d_hour)
 
-d_xml <- fetch_and_parse(pick_xml(day == d_day, d_hour)) %>%
-  add_boreholes() %>% add_depth(channel_maps) %>% prep_xml(d_borehole)
+d_picks <- pick_xml(day == d_day, d_hour, d_channel)
+cat("xml: selected", nrow(d_picks), "files\n")
+d_xml <- if (nrow(d_picks) > 0) {
+  fetch_and_parse(d_picks) %>%
+    add_boreholes() %>% add_depth(channel_maps) %>% prep_xml(d_borehole)
+} else NULL
 
 d_all <- bind_rows(d_db, d_xml)
 
