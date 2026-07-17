@@ -1,5 +1,5 @@
 ---
-title: "nice_graphs"
+title: ""
 output: html_document
 
 ---
@@ -39,6 +39,7 @@ for (site in hobos_all) {
   dfs[[site]] = final[, c("Date-Time", "Specific Conductivity", "Temperature")]
 }
 df_full = bind_rows(dfs, .id = "Site") %>% drop_na()
+rm(list = c("dfs", "result", "final", "to_filter", "data"))
 ```
 
 
