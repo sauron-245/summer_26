@@ -14,13 +14,13 @@ library(lubridate)
 library(pracma)
 library(patchwork)
 
-cations <- read_csv("anion_cation/cation_xlsx.csv") %>% 
+cations <- read_csv("Creek and Well Cations - Sheet1.csv") %>% 
   mutate(
     MeasurementDate = mdy(MeasurementDate), 
     Date = mdy(Date),
     Calcium = as.numeric(Calcium), Magnesium = as.numeric(Magnesium), Potassium = as.numeric(Potassium), Sodium = as.numeric(Sodium), Date = as.Date(Date))
 
-anions <- read_csv("anion_cation/anion_xlsx.csv") %>% 
+anions <- read_csv("Creek and Well Anion Data - newdatasorted.csv") %>% 
   mutate(
     MeasurementDate = mdy(MeasurementDate),
     Date_full = mdy(paste(Month, Day, Year, sep = " ")),
