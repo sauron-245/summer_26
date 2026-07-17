@@ -120,25 +120,25 @@ plot3 =
   labs(title = "Nitrate at P1, well vs. Creek", color = "Location", x = "Date", y = "Nitrate Concentration")
 print(plot3)
 
-terrible_plot = function(site, metric) {
+terrible_plot = function(df, site, metric) {
   plot = 
     ggplot() + 
-    geom_point(data = anions %>% 
+    geom_point(data = df %>% 
                  filter(PumpTest_Creek != "C", Well == site) %>% 
                  group_by(Date_full) %>% 
                  summarize(avg = mean(.data[[metric]], na.rm = TRUE), .groups = "drop"),
                aes(x = Date_full, y = avg, color = paste0(site, " well"))) + 
-    geom_line(data = anions %>% 
+    geom_line(data = df %>% 
                 filter(PumpTest_Creek != "C", Well == site) %>% 
                 group_by(Date_full) %>% 
                 summarize(avg = mean(.data[[metric]], na.rm = TRUE), .groups = "drop"),
               aes(x = Date_full, y = avg), color = 'lightblue') +
-    geom_point(data = anions %>% 
+    geom_point(data = df %>% 
                  filter(PumpTest_Creek == "C", Well == site) %>% 
                  group_by(Date_full) %>% 
                  summarize(avg = mean(.data[[metric]], na.rm = TRUE), .groups = "drop"),
                aes(x = Date_full, y = avg, color = paste0(site, " creek"))) + 
-    geom_line(data = anions %>% 
+    geom_line(data = df %>% 
                 filter(PumpTest_Creek == "C", Well == site) %>% 
                 group_by(Date_full) %>% 
                 summarize(avg = mean(.data[[metric]], na.rm = TRUE), .groups = "drop"),
@@ -146,7 +146,7 @@ terrible_plot = function(site, metric) {
     theme_bw(base_size = 20) + 
     scale_y_continuous(limits = c(0, 80)) +
     labs(title = paste0(metric, " at ", site, " well vs. Creek"), color = "Location", x = "Date", y = paste0(metric, " Concentration"))
-  print(plot)
+  return(plot)
 }
 
 terrible_plot("P1", "Sulfate")
@@ -185,10 +185,23 @@ anions %>%
   summarize(avg = mean(Nitrate)) %>% 
   ggplot()
 
-cations %>% 
-  filter(!is.na(Well), Dilution == "1:4", Well != "C") %>% 
-  group_by(Well, Date) %>% 
-  summarize(avg = mean(Magnesium, na.rm = TRUE)) %>% 
-  ggplot(aes(x = Date, y = avg, color = Well)) + 
-  geom_point() + 
-  geom_line()
+cations %>% filter(PumpTest_Creek != "A" & Well != "DO") %>% arrange(Date) %>%
+  group_by(Date, Well) %>% 
+  ggplot(aes(Date, Magnesium, fill = PumpTest_Creek)) + geom_path() + 
+  geom_point(pch = 21, size = 3) + facet_wrap(vars(Well)) + theme_bw(base_size = 16)
+
+
+site = "P1"
+df = anions
+metric = "Nitrate"
+plot = df %>% 
+  filter(PumpTest_Creek != "A", Well == site) %>% 
+  group_by(Date_full, PumpTest_Creek) %>% 
+  summarize(avg = mean(.data[[metric]], na.rm = TRUE), .groups = "drop") %>% 
+  ggplot(aes(x = Date_full, y = avg, fill = PumpTest_Creek)) + 
+    geom_point() + 
+    geom_path()
+print(plot)
+
+plot = df %>% 
+  filter(PumpTest_Creek != "A", Well == site)

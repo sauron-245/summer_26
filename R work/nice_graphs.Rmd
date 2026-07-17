@@ -1,0 +1,243 @@
+---
+title: ""
+output: html_document
+
+---
+```{r global-options, include=FALSE}
+knitr::opts_chunk$set(fig.width=15, fig.height=8, fig.path='Figs/',
+                      echo=FALSE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(pracma)
+library(patchwork)
+
+cations <- read_csv("anion_cation/cation_xlsx.csv") %>% 
+  mutate(
+    MeasurementDate = mdy(MeasurementDate), 
+    Date = mdy(Date),
+    Calcium = as.numeric(Calcium), Magnesium = as.numeric(Magnesium), Potassium = as.numeric(Potassium), Sodium = as.numeric(Sodium), Date = as.Date(Date))
+
+anions <- read_csv("anion_cation/anion_xlsx.csv") %>% 
+  mutate(
+    MeasurementDate = mdy(MeasurementDate),
+    Date_full = mdy(paste(Month, Day, Year, sep = " ")),
+    Nitrate = as.numeric(Nitrate), Flouride = as.numeric(Flouride), Chloride = as.numeric(Chloride)
+  )
+
+dfs = list()
+hobos_all = c("Dwnstrm", "P1", "P2", "P3", "Mdstrm", "Spring", "P4", "P5", "P5_creek_cond") 
+for (site in hobos_all) {
+  data = read_csv(paste0("hobos/hobos_running/", site, "_current.csv"))
+  data = data %>% drop_na()
+  to_filter = data$'Specific Conductivity'
+  result = hampel(to_filter, k = 100, t0 = 2)
+  final = data %>% slice(-result$ind)
+  
+  dfs[[site]] = final[, c("Date-Time", "Specific Conductivity", "Temperature")]
+}
+df_full = bind_rows(dfs, .id = "Site") %>% drop_na()
+rm(list = c("dfs", "result", "final", "to_filter", "data"))
+```
+
+
+## Plot Set 1: Anions, Before Pump vs. Creek for P1, P3, & P5
+
+```{r, fig.width=13}
+build_plot = function(df, site, metric) {
+  plot = df %>% 
+    filter(PumpTest_Creek != "A", Well == site) %>% 
+    mutate(PumpTest_Creek = ifelse(PumpTest_Creek == "B", "Well", "Creek")) %>% 
+    group_by(Date_full, PumpTest_Creek) %>% 
+    summarize(avg = mean(.data[[metric]], na.rm = TRUE), .groups = "drop") %>% 
+    
+    
+    ggplot(aes(x = Date_full, y = avg, fill = PumpTest_Creek)) + 
+      geom_path(aes(color = PumpTest_Creek)) + 
+      geom_point(pch = 21, size = 2.5) + 
+      theme_bw(base_size = 16) + 
+      theme(plot.subtitle = element_text(size = 10)) +
+      scale_y_continuous(limits = c(0, 85)) +
+      scale_x_date(limits = range(anions$Date_full, na.rm = TRUE), date_breaks = "4 months") +
+      labs(title = paste0(metric, " at ", site, ": well vs. Creek"),
+           subtitle = "Well measurement taken before pumping",
+           fill = "Location",
+           x = "Date",
+           y = "Concentration (ppm)")
+
+  return(plot)
+}
+
+p1_n = build_plot(anions, "P1", "Nitrate")
+p2_n = build_plot(anions, "P3", "Nitrate")
+p3_n = build_plot(anions, "P5", "Nitrate")
+
+p1_s = build_plot(anions, "P1", "Sulfate")
+p2_s = build_plot(anions, "P3", "Sulfate")
+p3_s = build_plot(anions, "P5", "Sulfate")
+
+p1_c = build_plot(anions, "P1", "Chloride")
+p2_c = build_plot(anions, "P3", "Chloride")
+p3_c = build_plot(anions, "P5", "Chloride")
+
+wrap_plots(
+  p1_n, p2_n, p3_n,
+  p1_c, p2_c, p3_c,
+  p1_s, p2_s, p3_s,
+  nrow = 3,
+  ncol = 3,
+  guides = "collect",
+  axes = "collect"
+)
+
+```
+
+Nitrates in the P1 well are meaningfully higher than P3 and P5; additionally, P1 is the only instance where nitrates are higher in the well than the creek. Similarity in values and behavior suggests that Nitrate and Chloride concentrations are related, possibly due to their presence in fertilizer or application at similar times of year. Sulfate more or less operates in its own universe; overall concentrations tend to be slightly higher, and creek/well relationships flip except for at P1. 
+
+
+## 2: SPC with anion overlays
+
+```{r, fig.width=13}
+double_graph = function(site){
+anion_data = anions %>% 
+  filter(PumpTest_Creek == "B", Well == site) %>% 
+    summarize(avg_n = mean(Nitrate), avg_s = mean(Sulfate), avg_c = mean(Chloride), .by = Date_full)
+spc_data = df_full %>% 
+  filter(Site == site, `Date-Time` >= min(anion_data$Date_full), `Date-Time` <= max(anion_data$Date_full))
+
+p1 = ggplot(spc_data, aes(x = `Date-Time`, y = `Specific Conductivity`)) + 
+  geom_line() + 
+  theme_bw(base_size = 20) +
+  labs(title = paste0("SPC and anion data at ", site),
+       x = NULL,
+       y = "SPC (usm/cm)") +
+    theme(plot.margin = margin(0,5,-5,5),
+        plot.title.position = "plot")
+
+p2 = ggplot(anion_data) + 
+  geom_line(aes(x = Date_full, y = avg_n, color = "Nitrate")) + 
+  geom_point(aes(x = Date_full, y = avg_n, fill = "Nitrate"), pch = 21, size = 2.5) + 
+  geom_line(aes(x = Date_full, y = avg_s, color = "Sulfate")) + 
+  geom_point(aes(x = Date_full, y = avg_s, fill = "Sulfate"), pch = 21, size = 2.5) + 
+  geom_line(aes(x = Date_full, y = avg_c, color = "Chloride")) + 
+  geom_point(aes(x = Date_full, y = avg_c, fill = "Chloride"), pch = 21, size = 2.5) + 
+  theme_bw(base_size = 20) + 
+  guides(color = "none") +
+  theme(plot.margin = margin(-5,5,0,5), 
+        plot.title.position = "plot") +
+  labs(title = NULL,
+      x = "Date", 
+      y = "Concentration (ppm)",
+      fill = "Anion")
+p1 / p2 + plot_layout(guides = "collect")
+}
+
+double_graph("P1")  
+double_graph("P3") 
+double_graph("P5") 
+```
+
+## Plot set 3: all cations
+
+```{r, fig.width=13}
+cat_plot = function(df, site, metric) {
+  plot = df %>% 
+    filter(PumpTest_Creek != "A", Well == site, Dilution == "1:4") %>% 
+    mutate(PumpTest_Creek = ifelse(PumpTest_Creek == "B", "Well", "Creek"), Date = as.Date(Date)) %>% 
+    group_by(Date, PumpTest_Creek) %>% 
+    summarize(avg = mean(.data[[metric]], na.rm = TRUE), .groups = "drop") %>% 
+    
+    
+   ggplot(aes(x = Date, y = avg, fill = PumpTest_Creek)) + 
+      geom_line(aes(color = PumpTest_Creek)) + 
+      geom_point(pch = 21, size = 2.5) + 
+      theme_bw(base_size = 16) + 
+      theme(plot.subtitle = element_text(size = 10)) +
+      # scale_y_continuous(limits = c(0, 40)) +
+      scale_x_date(
+        # limits = c(min(anions$Date_full), max(anions$Date_full)),
+            date_breaks = "1 month",
+            date_labels = "%Y-%m") +
+      labs(title = paste0(metric, " at ", site, ": well vs. Creek"),
+           subtitle = "Well measurement taken before pumping",
+           fill = "Location",
+           x = "Date",
+           y = "Concentration (ppm)") +
+    guides(color = 'none')
+
+  return(plot)
+}
+
+p1_p = cat_plot(cations, "P1", "Potassium")
+p2_p = cat_plot(cations, "P3", "Potassium")
+p3_p = cat_plot(cations, "P5", "Potassium")
+
+p1_m = cat_plot(cations, "P1", "Magnesium")
+p2_m = cat_plot(cations, "P3", "Magnesium")
+p3_m = cat_plot(cations, "P5", "Magnesium")
+
+p1_c = cat_plot(cations, "P1", "Calcium")
+p2_c = cat_plot(cations, "P3", "Calcium")
+p3_c = cat_plot(cations, "P5", "Calcium")
+
+p1_s = cat_plot(cations, "P1", "Sodium")
+p2_s = cat_plot(cations, "P3", "Sodium")
+p3_s = cat_plot(cations, "P5", "Sodium")
+
+wrap_plots(
+  # p1_p, p2_p, p3_p,
+  p1_m, p2_m, p3_m,
+  p1_s, p2_s, p3_s,
+  p1_c, p2_c, p3_c,
+  nrow = 3,
+  ncol = 3,
+  guides = "collect",
+  axes = "collect"
+)
+
+```
+
+## Plot Set 4: Cations & SPC
+
+```{r, fig.width=13}
+plot_cations = function(site){
+cation_data = cations %>% 
+  filter(PumpTest_Creek == "B", Well == site) %>% 
+    summarize(avg_c = mean(Calcium), avg_p = mean(Potassium), avg_m = mean(Magnesium), .by = Date)
+spc_data = df_full %>% 
+  filter(Site == site, `Date-Time` >= min(cation_data$Date), `Date-Time` <= max(cation_data$Date))
+
+p1 = ggplot(spc_data, aes(x = `Date-Time`, y = `Specific Conductivity`)) + 
+  geom_line() + 
+  theme_bw(base_size = 20) +
+  labs(title = paste0("SPC and cation data at ", site),
+       x = NULL,
+       y = "SPC (usm/cm)") +
+    theme(plot.margin = margin(0,5,-5,5),
+        plot.title.position = "plot")
+
+p2 = ggplot(cation_data) + 
+  geom_line(aes(x = Date, y = avg_c, color = "Calcium")) + 
+  geom_point(aes(x = Date, y = avg_c, fill = "Calcium"), pch = 21, size = 2.5) + 
+  # geom_line(aes(x = Date, y = avg_p, color = "Potassium")) + 
+  # geom_point(aes(x = Date, y = avg_p, fill = "Potassium"), pch = 21, size = 2.5) + 
+  geom_line(aes(x = Date, y = avg_m, color = "Magnesium")) + 
+  geom_point(aes(x = Date, y = avg_m, fill = "Magnesium"), pch = 21, size = 2.5) + 
+  theme_bw(base_size = 20) + 
+  guides(color = "none") +
+  theme(plot.margin = margin(-5,5,0,5), 
+        plot.title.position = "plot") +
+  labs(title = NULL,
+      x = "Date", 
+      y = "Concentration (ppm)",
+      fill = "Cation")
+p1 / p2 + plot_layout(guides = "collect")
+}
+
+plot_cations("P1")  
+plot_cations("P3") 
+plot_cations("P5") 
+```
+

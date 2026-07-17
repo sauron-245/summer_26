@@ -54,10 +54,12 @@ update_hobo_log = function(site) {
   data_to_add = log_new %>%
     filter(`Date-Time` > date_current_last) %>% # selects only data not present in running logs
     filter(Temperature > 0) # Catches some points collected when the monitor was removed from the well during winter
-  log_standing_updated = rbind(log_standing, data_to_add) 
+  log_standing_updated = rbind(log_standing, data_to_add) # Attach new daya
   log_standing_updated = log_standing_updated %>% 
-    mutate(`Date-Time` = format(`Date-Time`, "%Y-%m-%d %H:%M:%S"))
-  write_csv(log_standing_updated, paste0("hobos/hobos_running/", site, "_current.csv")) # Adds new data and overwrites existing .csv
+    mutate(`Date-Time` = format(`Date-Time`, "%Y-%m-%d %H:%M:%S")) # Ensure date-time is correctly formatted
+  rm(list = c("data_to_add", "log_standing", "log_new")) # Clean up temp files
+  
+  write_csv(log_standing_updated, paste0("hobos/hobos_running/", site, "_current.csv")) 
 }
 
 hobos_week = c("P4_creek", "P5", "P5_creek", "P5_creek_cond") # Default option for all HOBO monitors. 
