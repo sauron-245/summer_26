@@ -6,7 +6,7 @@ for (site in hobos_all) {
   assign(site, read_csv(paste0("hobos/hobos_running/", site, "_current.csv")))
 }
 dfs = list()
-hobos_all = c("Dwnstrm", "P1", "P2", "P3", "Mdstrm", "Spring", "P4", "P5", "P5_creek_cond") 
+hobos_all = c("Dwnstrm", "P1", "P1_creek", "P2", "P2_creek", "P3","P4_creek",  "Mdstrm", "Spring", "P4", "P5", "P5_creek", "P5_creek_cond") 
 for (site in hobos_all) {
   data = read_csv(paste0("hobos/hobos_running/", site, "_current.csv"))
   data = data %>% drop_na()
@@ -70,6 +70,12 @@ p6 =
   geom_line(data = Dwnstrm %>% filter(year(`Date-Time`) == 2026), aes(x = `Date-Time`, y = `Specific Conductivity`), linewidth = 0.5) +
   geom_line(data = P2 %>% filter(year(`Date-Time`) == 2026), aes(x = `Date-Time`, y = `Specific Conductivity`), linewidth = 0.5) +
   geom_line(data = P5_creek_cond %>% filter(year(`Date-Time`) == 2026), aes(x = `Date-Time`, y = `Specific Conductivity`), linewidth = 0.5) +
-  # geom_smooth(method = "loess", se = FALSE, span = 0.01) +
+  geom_smooth(method = "loess", se = FALSE, span = 0.01) +
   theme_bw()
 print(p6)  
+
+
+ggplot() + 
+  geom_line(data = P5, aes(x = `Date-Time`, y = Temperature, color = "Well")) + 
+  geom_line(data = P5_creek, aes(x = `Date-Time`, y = Temperature, color = "Creek"))
+  

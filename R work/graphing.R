@@ -109,7 +109,7 @@ print(p5)
 
 df_full %>% 
   filter(Site == "P5" | Site == "P5_creek_cond") %>% 
-  ggplot(aes(x = `Date-Time`, y = `Specific Conductivity`, color = Site)) + 
+  ggplot(aes(x = `Date-Time`, y = Temperature, color = Site)) + 
   geom_line()
 
 for(num in seq_along(1:5)) {

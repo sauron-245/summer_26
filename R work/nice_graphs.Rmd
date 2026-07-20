@@ -59,7 +59,7 @@ build_plot = function(df, site, metric) {
       geom_point(pch = 21, size = 2.5) + 
       theme_bw(base_size = 16) + 
       theme(plot.subtitle = element_text(size = 10)) +
-      scale_y_continuous(limits = c(0, 85)) +
+      # scale_y_continuous(limits = c(0, 85)) +
       scale_x_date(limits = range(anions$Date_full, na.rm = TRUE), date_breaks = "4 months") +
       labs(title = paste0(metric, " at ", site, ": well vs. Creek"),
            subtitle = "Well measurement taken before pumping",
@@ -157,7 +157,7 @@ cat_plot = function(df, site, metric) {
       theme(plot.subtitle = element_text(size = 10)) +
       # scale_y_continuous(limits = c(0, 40)) +
       scale_x_date(
-        # limits = c(min(anions$Date_full), max(anions$Date_full)),
+        limits = c(min(cations$Date), max(cations$Date)),
             date_breaks = "1 month",
             date_labels = "%Y-%m") +
       labs(title = paste0(metric, " at ", site, ": well vs. Creek"),
@@ -177,7 +177,7 @@ p3_p = cat_plot(cations, "P5", "Potassium")
 p1_m = cat_plot(cations, "P1", "Magnesium")
 p2_m = cat_plot(cations, "P3", "Magnesium")
 p3_m = cat_plot(cations, "P5", "Magnesium")
-
+ 
 p1_c = cat_plot(cations, "P1", "Calcium")
 p2_c = cat_plot(cations, "P3", "Calcium")
 p3_c = cat_plot(cations, "P5", "Calcium")
@@ -236,8 +236,10 @@ p2 = ggplot(cation_data) +
 p1 / p2 + plot_layout(guides = "collect")
 }
 
-plot_cations("P1")  
+plot_cations("P1") 
 plot_cations("P3") 
 plot_cations("P5") 
 ```
+
+
 

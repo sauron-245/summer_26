@@ -130,7 +130,7 @@ n   <- nrow(xml_items)
 skipped <- 0
 failed  <- character(0)
 
-for (i in seq_len(n)) {
+for (i in seq_len(400)) {
   
   file_id   <- xml_items$id[i]
   file_name <- xml_items$name[i]

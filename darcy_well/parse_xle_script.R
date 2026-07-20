@@ -140,7 +140,7 @@ if (length(xml_files) == 0) {
 
 all_rows <- vector("list", length(xml_files))
 
-for (i in seq_along(xml_files)) {
+for (i in seq_along(250)) {
   all_rows[[i]] <- parse_one_xml(xml_files[i])
   
   #ping every 25 files (and on the very last one)
