@@ -101,6 +101,15 @@ add_depth <- function(df) {
     filter(TMP > TMP_MIN, TMP < TMP_MAX) %>%
     mutate(depth_m = LAF - TOP_OF_WELL_LAF,
            datetime = ymd_hms(start_time, tz = "UTC")) %>%
+    mutate(
+      datetime = ymd_hms(start_time, tz = "UTC"),
+      label = format(datetime, "%Y-%m-%d %H:%M"),
+      leg = if_else(LAF <= TURNAROUND_LAF, "down", "up"),
+      depth_m = if_else(LAF <= TURNAROUND_LAF,
+                        LAF - TOP_OF_WELL_LAF,
+                        2 * TURNAROUND_LAF - LAF - TOP_OF_WELL_LAF),
+      depth_ft = depth_m * 3.28084
+    ) %>%
     filter(depth_m >= 0)          # keep only points at or below the well top
 }
 
@@ -224,20 +233,35 @@ folded <- fold_profile(dat)
 
 plot_data <- folded %>% filter(SHOW_UP_LEG | leg == "down")
 
-comparison_plot <- ggplot(data = plot_data,
-                          mapping = aes(TMP, depth_m, color = label, linetype = leg,
-                                        group = interaction(start_time, leg))) +
+comparison_plot1 <- ggplot(data = plot_data,
+                           mapping = aes(TMP, depth_ft, color = label, linetype = leg,
+                                         group = interaction(start_time, leg))) +
   geom_path(linewidth = 0.6) +
   scale_y_reverse() +
   coord_cartesian(xlim = c(10, 12)) +
-  scale_linetype_manual(values = c(down = "solid", up = "dashed"),
-                        labels = c(down = "down", up = "up")) +
-  labs(x = "Temperature (°C)", y = "Depth below well top (m)",
-       color = "observation", linetype = "cable leg",
-       title = "Darcy Well — temperature vs depth") +
+  scale_linetype_manual(values = c(down = "solid", up = "dashed"), guide = "none") +
+  scale_color_viridis_d(option = "viridis") +
+  labs(x = "Temperature (°C)", y = "Depth below well top (ft)",
+       color = "observation (UTC)",
+       title = "Darcy Observation Well — temperature vs depth") +
   theme_bw()
 
-comparison_plot
+comparison_plot1
 
+comparison_plot2 <- ggplot(data = plot_data,
+                           mapping = aes(TMP, depth_ft, color = label, linetype = leg,
+                                         group = interaction(start_time, leg))) +
+  geom_path(linewidth = 0.6) +
+  scale_y_reverse() +
+  scale_linetype_manual(values = c(down = "solid", up = "dashed"), guide = "none") +
+  scale_color_viridis_d(option = "viridis") +
+  labs(x = "Temperature (°C)", y = "Depth below well top (ft)",
+       color = "observation",
+       title = "Darcy Observation Well — temperature vs depth") +
+  theme_bw()
+
+comparison_plot2
 ####pumping test dates march 19 - 27 and startup testing may 4-5####
+
+
 

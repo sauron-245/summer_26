@@ -36,7 +36,7 @@ BOREHOLE_LAF <- list(
 )
 
 TMP_MIN <- -20    # drop physically impossible temperatures
-TMP_MAX <- 120
+TMP_MAX <- 100
 
 
 # --- database ---------------------------------------------------------------
@@ -247,17 +247,12 @@ print(index %>% count(channel))
 #  Pinch-point analysis functions.
 #
 #  Background (Fandel et al. 2025): pinch points are depth intervals where the
-#  borehole temperature stays near the pre-operational baseline even while the
-#  rest of the profile swings hot/cold with the seasons. They mark intervals of
-#  high horizontal groundwater flow along fractures — flowing water near the
-#  mean annual temperature keeps flushing the thermal anomaly away. So the
-#  defining property is LOW SEASONAL AMPLITUDE, not a particular temperature.
-#  Non-pinch intervals have poor flow, so heat accumulates and they swing far
-#  from baseline.
+#  borehole temperature stays near the pre-operational baseline meaning they have 
+#  low seasonal amplitude
 ############################################################
 
 
-# the pre-operational baseline temperature (deep stable ground temp, ~10 °C).
+# the pre-operational baseline temperature 
 # used as the reference that pinch points stay close to.
 BASELINE_TEMP <- 10.0
 
@@ -301,8 +296,7 @@ interval_metrics <- function(df) {
            month = month(datetime))
 }
 
-# the paper's actual pinch metric: peak-to-trough amplitude over a time window.
-# a true pinch point has SMALL amplitude (groundwater pins it to baseline);
+# a true pinch point has SMALL amplitude 
 # a non-pinch interval swings widely. computed per interval per year.
 interval_amplitude <- function(metrics_df, by = "year") {
   metrics_df %>%
