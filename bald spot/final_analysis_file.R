@@ -24,7 +24,7 @@ a_channel  <- "3"          # "1" or "3"
 a_borehole <- "S4"         # S1/S2/S3 are channel 1; S4/S5 are channel 3
 a_day      <- 15
 a_hour     <- 12
-a_years_db <- c(2019, 2020, 2021, 2022, 2023)
+a_years_db <- c(  2021, 2022, 2023)
 
 # --- build ---
 rm(list = intersect(c("a_db", "a_xml", "a_data"), ls()))
@@ -49,7 +49,7 @@ a_data <- bind_rows(a_db, a_xml) %>%
   mutate(month = factor(month(datetime)))
 
 # --- plot ---
-ggplot(a_data, aes(temperature_c, depth_m, group = obs_id, color = month)) +
+interactive1 <- ggplot(a_data, aes(temperature_c, depth_m, group = obs_id, color = month)) +
   geom_path(aes(linewidth = source, alpha = source)) +
   scale_y_reverse() +
   coord_cartesian(xlim = c(5, 20)) +
@@ -61,15 +61,15 @@ ggplot(a_data, aes(temperature_c, depth_m, group = obs_id, color = month)) +
        title = paste0(a_borehole, " — day ", a_day, " of each month")) +
   theme_bw()
 
-
+ggplotly(interactive1)
 ############################################################
 #  B. MONTH COMPARISON — same month across years
 ############################################################
 
 # --- settings ---
 b_channel  <- "3"
-b_borehole <- "S5"
-b_months   <- c(1,2,3,4)
+b_borehole <- "S4"
+b_months   <- c(5,6,7,8)
 b_day      <- 15
 b_hour     <- 12
 
@@ -118,8 +118,8 @@ ggplotly(p)
 ############################################################
 
 # --- settings ---
-c_channel   <- "3"
-c_borehole  <- "S4"
+c_channel   <- "1"
+c_borehole  <- "S1"
 c_xml_start <- "2025-10-01"
 c_xml_end   <- "2026-10-31"
 c_hour      <- 12
@@ -156,11 +156,9 @@ ggplot(c_data, aes(date, mean_temp, color = source)) +
   geom_point(data = filter(c_data, source == "xml"), size = 1.0, shape = 17) +
   scale_color_manual(values = c(database = "darkgrey", xml = "red")) +
   labs(x = "Year", y = "Mean borehole temperature (°C)", color = NULL,
-       title = paste0(c_borehole, " — mean daily temperature over time"),
-       subtitle = "database and xml temperatures are produced differently — offsets may not be real change") +
+       title = paste0(c_borehole, " — mean daily temperature over time")) +
   theme_bw() +
   theme(legend.position = "bottom")
-
 
 #############################################################
 #  D. PINCH POINT vs NON-PINCH — how do they change over time?
@@ -175,7 +173,7 @@ ggplot(c_data, aes(date, mean_temp, color = source)) +
 
 # --- settings ---
 d_channel  <- "3"
-d_borehole <- "S4"
+d_borehole <- "S5"
 d_day      <- 15
 d_hour     <- 12
 d_years_db <- c(2019, 2020, 2021, 2022, 2023)
@@ -221,8 +219,8 @@ d_amp %>% arrange(interval, year) %>% print(n = 50)
 ggplot(d_metrics, aes(datetime, mean_temp, color = interval, shape = source)) +
   geom_point(size = 1.5) +
   geom_line(aes(group = interaction(interval, source)), linewidth = 0.3, alpha = 0.6) +
-  geom_hline(yintercept = BASELINE_TEMP, linetype = "dashed", color = "grey40") +
-  scale_color_manual(values = c(pinch = "#1f6feb", non_pinch = "#d1242f")) +
+  geom_hline(yintercept = BASELINE_TEMP, linetype = "dashed", color = "darkgrey") +
+  scale_color_manual(values = c(pinch = "blue", non_pinch = "red")) +
   labs(x = NULL, y = "Mean temperature in interval (°C)",
        color = "interval", shape = "source",
        title = paste0(d_borehole, " — pinch vs non-pinch over time"),
@@ -236,7 +234,7 @@ ggplot(d_metrics, aes(datetime, mean_temp, color = interval, shape = source)) +
 
 ggplot(d_amp, aes(factor(year), amplitude, fill = interval)) +
   geom_col(position = position_dodge(width = 0.8), width = 0.7) +
-  scale_fill_manual(values = c(pinch = "#1f6feb", non_pinch = "#d1242f")) +
+  scale_fill_manual(values = c(pinch = "blue", non_pinch = "red")) +
   labs(x = "Year", y = "Peak-to-trough amplitude (°C)", fill = "interval",
        title = paste0(d_borehole, " — seasonal amplitude by interval, per year"),
        subtitle = "pinch points should show consistently LOW amplitude") +
@@ -249,7 +247,7 @@ ggplot(d_amp, aes(factor(year), amplitude, fill = interval)) +
 ggplot(d_metrics, aes(factor(year), dev, fill = interval)) +
   geom_boxplot(position = position_dodge(width = 0.8), width = 0.6,
                outlier.size = 0.5) +
-  scale_fill_manual(values = c(pinch = "#1f6feb", non_pinch = "#d1242f")) +
+  scale_fill_manual(values = c(pinch = "blue", non_pinch = "red")) +
   labs(x = "Year", y = "|temperature − baseline| (°C)", fill = "interval",
        title = paste0(d_borehole, " — deviation from baseline by interval"),
        subtitle = "pinch points stay near zero; non-pinch strays further") +
