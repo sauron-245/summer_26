@@ -1,7 +1,8 @@
 ---
 title: ""
 output: html_document
-
+editor_options: 
+  chunk_output_type: console
 ---
 ```{r global-options, include=FALSE}
 knitr::opts_chunk$set(fig.width=15, fig.height=8, fig.path='Figs/',
@@ -13,6 +14,7 @@ library(tidyverse)
 library(lubridate)
 library(pracma)
 library(patchwork)
+library(RColorBrewer)
 
 cations <- read_csv("anion_cation/cation_xlsx.csv") %>% 
   mutate(
@@ -24,8 +26,30 @@ anions <- read_csv("anion_cation/anion_xlsx.csv") %>%
   mutate(
     MeasurementDate = mdy(MeasurementDate),
     Date_full = mdy(paste(Month, Day, Year, sep = " ")),
-    Nitrate = as.numeric(Nitrate), Flouride = as.numeric(Flouride), Chloride = as.numeric(Chloride)
-  )
+    Nitrate = as.numeric(Nitrate), Flouride = as.numeric(Flouride), Chloride = as.numeric(Chloride))
+
+manual_well_creek <- read_csv("manual_to_dl.csv") %>% 
+    mutate(Site = case_when(
+    Well == "P1" ~ "1",
+    Well == "P2" ~ "2",
+    Well == "P3" ~ "3",
+    Well == "P4" ~ "4",
+    Well == "P5" ~ "5",
+    Well == "C1" ~ "1",
+    Well == "C2" ~ "2",
+    Well == "C3" ~ "3",
+    Well == "C4" ~ "4",
+    Well == "C5" ~ "5"
+  ),
+  Area = case_when(
+    str_sub(Well, 1, 1) == "P" ~ "Well",
+    str_sub(Well, 1, 1) == "C" ~ "Creek"
+  ), Date = mdy_hms(Date)) %>% 
+  filter(SPC < 1000 & year(Date) > 2025)
+
+manual_before_after <- read_csv("manual_before_after.csv") %>% 
+  mutate(Date = mdy_hms(Date)) %>% 
+  filter(year(Date) > 2025)
 
 dfs = list()
 hobos_all = c("Dwnstrm", "P1", "P2", "P3", "Mdstrm", "Spring", "P4", "P5", "P5_creek_cond") 
@@ -241,5 +265,36 @@ plot_cations("P3")
 plot_cations("P5") 
 ```
 
+```{r}
+my_pal = brewer.pal(n = 7, "PuBuGn")[3:7]
 
+plot = ggplot(manual_well_creek, aes(x = Date, y = SPC, color = Site, shape = Area)) + 
+  geom_line(linewidth = 1) +
+  geom_point(size = 3) +
+  scale_color_manual(values = my_pal) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%Y-%m") +
+  theme_bw() +
+  labs(title = "2026 Manual Data by Site and Location Type")
+
+print(plot)
+```
+
+
+```{r}
+df1 = manual_before_after %>% 
+  select(Well, Date, Temp_before, SPC_before) %>% 
+  drop_na()
+df2 = manual_before_after %>% 
+  select(Well, Date, Temp_after, SPC_after) %>% 
+  drop_na()
+
+ggplot(df1, aes(x = Date, y = Temp_before, color = Well, shape = "Before")) + 
+  geom_point(size = 2) + 
+  # geom_line() + 
+  geom_point(data = df2, aes(x = Date,y = Temp_after, color = Well, shape = "After"), size = 2) + 
+  # geom_line(data = df2, aes(x = Date,y = Temp_after, color = Well, shape = "After")) + 
+  theme_bw() + 
+  scale_color_manual(values = my_pal)
+
+```
 
