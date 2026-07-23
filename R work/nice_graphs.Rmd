@@ -15,6 +15,7 @@ library(lubridate)
 library(pracma)
 library(patchwork)
 library(RColorBrewer)
+library(ggpubr)
 
 cations <- read_csv("anion_cation/cation_xlsx.csv") %>% 
   mutate(
@@ -45,11 +46,11 @@ manual_well_creek <- read_csv("manual_to_dl.csv") %>%
     str_sub(Well, 1, 1) == "P" ~ "Well",
     str_sub(Well, 1, 1) == "C" ~ "Creek"
   ), Date = mdy_hms(Date)) %>% 
-  filter(SPC < 1000 & year(Date) > 2025)
+  filter(SPC_before < 1000, year(Date) > 2024)
 
 manual_before_after <- read_csv("manual_before_after.csv") %>% 
-  mutate(Date = mdy_hms(Date)) %>% 
-  filter(year(Date) > 2025)
+  mutate(Date = mdy_hms(Date))
+  # filter(year(Date) > 2025)
 
 dfs = list()
 hobos_all = c("Dwnstrm", "P1", "P2", "P3", "Mdstrm", "Spring", "P4", "P5", "P5_creek_cond") 
@@ -83,6 +84,7 @@ build_plot = function(df, site, metric) {
       geom_point(pch = 21, size = 2.5) + 
       theme_bw(base_size = 16) + 
       theme(plot.subtitle = element_text(size = 10)) +
+      guides(color = "none") +
       # scale_y_continuous(limits = c(0, 85)) +
       scale_x_date(limits = range(anions$Date_full, na.rm = TRUE), date_breaks = "4 months") +
       labs(title = paste0(metric, " at ", site, ": well vs. Creek"),
@@ -90,7 +92,7 @@ build_plot = function(df, site, metric) {
            fill = "Location",
            x = "Date",
            y = "Concentration (ppm)")
-
+  
   return(plot)
 }
 
@@ -268,33 +270,77 @@ plot_cations("P5")
 ```{r}
 my_pal = brewer.pal(n = 7, "PuBuGn")[3:7]
 
-plot = ggplot(manual_well_creek, aes(x = Date, y = SPC, color = Site, shape = Area)) + 
-  geom_line(linewidth = 1) +
-  geom_point(size = 3) +
-  scale_color_manual(values = my_pal) +
-  scale_x_date(date_breaks = "1 month", date_labels = "%Y-%m") +
-  theme_bw() +
-  labs(title = "2026 Manual Data by Site and Location Type")
+temp_plot = function(well){
+  df1 = manual_well_creek %>% 
+    filter(Site == well, Area == "Well") %>% 
+    select(Area, Date, Temp_before) %>% 
+    drop_na()
+  df2 = manual_well_creek %>% 
+    filter(Site == well, Area == "Well") %>% 
+    select(Area, Date,Temp_after) %>% 
+    drop_na()
+  df3 = manual_well_creek %>% 
+    filter(Site == well, Area == "Creek") %>% 
+    select(Area, Date, Temp_before) %>% 
+    drop_na()
 
-print(plot)
+  ggplot() + 
+    geom_point(data = df1, aes(x = Date, y = Temp_before, color = Area, shape = "Before"), size = 2.5) + 
+    geom_line(data = df1, aes(x = Date, y = Temp_before, color = Area)) +
+    geom_point(data = df2, aes(x = Date, y = Temp_after, color = Area, shape = "After"), size = 2.5) + 
+    geom_line(data = df2, aes(x = Date, y = Temp_after, color = Area)) +
+    geom_point(data = df3, aes(x = Date, y = Temp_before, color = Area, shape = "Before"), size = 2.5) + 
+    geom_line(data = df3, aes(x = Date, y = Temp_before, color = Area)) +
+    scale_color_manual(values = my_pal_2) +
+    theme_bw(base_size = 16) +
+    scale_x_date(date_breaks = "2 months", date_labels = "%Y-%m") +
+    scale_y_continuous(limits = c(0, 25)) +
+    # guides(color = "none") +
+    labs(title = paste0("Temperature Before & After Pumping at well ", well), x = "Date", y = "Temperature (C)", shape = "Time")
+}
+
+p1 = temp_plot("1")
+p2 = temp_plot("2")
+p3 = temp_plot("3")
+p4 = temp_plot("4")
+p5 = temp_plot("5")
+ggarrange(p1, p2, p3, p4, p5, common.legend = TRUE, legend = "bottom", nrow = 2, ncol = 3)
 ```
-
 
 ```{r}
-df1 = manual_before_after %>% 
-  select(Well, Date, Temp_before, SPC_before) %>% 
-  drop_na()
-df2 = manual_before_after %>% 
-  select(Well, Date, Temp_after, SPC_after) %>% 
-  drop_na()
+spc_plot = function(well){
+  df1 = manual_well_creek %>% 
+    filter(Site == well, Area == "Well") %>% 
+    select(Area, Date, SPC_before) %>% 
+    drop_na()
+  df2 = manual_well_creek %>% 
+    filter(Site == well, Area == "Well") %>% 
+    select(Area, Date, SPC_after) %>% 
+    drop_na()
+  df3 = manual_well_creek %>% 
+    filter(Site == well, Area == "Creek") %>% 
+    select(Area, Date, SPC_before) %>% 
+    drop_na()
 
-ggplot(df1, aes(x = Date, y = Temp_before, color = Well, shape = "Before")) + 
-  geom_point(size = 2) + 
-  # geom_line() + 
-  geom_point(data = df2, aes(x = Date,y = Temp_after, color = Well, shape = "After"), size = 2) + 
-  # geom_line(data = df2, aes(x = Date,y = Temp_after, color = Well, shape = "After")) + 
-  theme_bw() + 
-  scale_color_manual(values = my_pal)
+  ggplot() + 
+    geom_point(data = df1, aes(x = Date, y = SPC_before, color = Area, shape = "Before"), size = 2.5) + 
+    geom_line(data = df1, aes(x = Date, y = SPC_before, color = Area)) +
+    geom_point(data = df2, aes(x = Date, y = SPC_after, color = Area, shape = "After"), size = 2.5) + 
+    geom_line(data = df2, aes(x = Date, y = SPC_after, color = Area)) +
+    geom_point(data = df3, aes(x = Date, y = SPC_before, color = Area, shape = "Before"), size = 2.5) + 
+    geom_line(data = df3, aes(x = Date, y = SPC_before, color = Area)) +
+    scale_color_manual(values = my_pal_2) +
+    theme_bw(base_size = 16) +
+    scale_x_date(date_breaks = "2 months", date_labels = "%Y-%m") +
+    scale_y_continuous(limits = c(400, 900)) +
+    # guides(color = "none") +
+    labs(title = paste0("SPC Before & After Pumping at well ", well), x = "Date", y = "Specific Conductivity (us/cm)", shape = "Time")
+}
 
+p1 = spc_plot("1")
+p2 = spc_plot("2")
+p3 = spc_plot("3")
+p4 = spc_plot("4")
+p5 = spc_plot("5")
+ggarrange(p1, p2, p3, p4, p5, common.legend = TRUE, legend = "bottom", nrow = 2, ncol = 3)
 ```
-
