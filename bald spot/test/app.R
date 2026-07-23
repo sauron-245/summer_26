@@ -2,9 +2,8 @@
 #  Bald Spot DTS — INTERACTIVE DASHBOARD (Shiny)
 #
 #  Run 01_setup.R FIRST. Then run this whole file — it fetches everything once
-#  (slow), then launches an interactive app where all toggling is instant:
-#  pick boreholes, months, years, source; hover for depth/temp; boreholes show
-#  side by side and fill the frame.
+#  (slow), then launches an interactive app where all toggling is instant.
+#  You choose which variable facets the plots; the rest act as filters.
 ############################################################
 
 library(shiny)
@@ -17,13 +16,11 @@ library(lubridate)
 #  ONE-TIME FETCH — builds a master data frame of everything
 ############################################################
 
-# which day/hour define an "observation" for the profile view
 MASTER_DAY  <- 15
 MASTER_HOUR <- 12
-MASTER_DB_YEARS <- 2019:2023          # database years to pull
+MASTER_DB_YEARS <- 2019:2023
 ALL_BOREHOLES <- c("S1", "S2", "S3", "S4", "S5")
 
-# map each borehole to its channel (S1-3 = ch1, S4-5 = ch3)
 borehole_channel <- function(bh) if (bh %in% c("S1","S2","S3")) "1" else "3"
 
 message("Building master dataset — this is the slow part...")
@@ -32,7 +29,6 @@ master <- bind_rows(lapply(ALL_BOREHOLES, function(bh) {
   ch  <- borehole_channel(bh)
   laf <- BOREHOLE_LAF[[bh]]
   
-  # database side
   db <- get_db_data(
     sprintf("date_part('day', M.datetime_utc) = %d
              AND date_part('year', M.datetime_utc) IN (%s)",
@@ -41,7 +37,6 @@ master <- bind_rows(lapply(ALL_BOREHOLES, function(bh) {
     prep_db(MASTER_HOUR) %>%
     mutate(borehole = bh)
   
-  # xml side (the 15th of every month available)
   picks <- pick_xml(day == MASTER_DAY, MASTER_HOUR, ch)
   xml <- if (nrow(picks) > 0) {
     fetch_and_parse(picks) %>%
@@ -53,7 +48,6 @@ master <- bind_rows(lapply(ALL_BOREHOLES, function(bh) {
   bind_rows(db, xml)
 }))
 
-# add the fields the toggles use
 master <- master %>%
   mutate(year = year(datetime),
          month = month(datetime),
@@ -72,7 +66,14 @@ ui <- fluidPage(
   titlePanel("Bald Spot DTS — depth profiles"),
   sidebarLayout(
     sidebarPanel(width = 3,
-                 checkboxGroupInput("boreholes", "Boreholes (side by side):",
+                 selectInput("facet_by", "Facet plots by:",
+                             choices = c("borehole", "month", "year", "source"),
+                             selected = "borehole"),
+                 selectInput("colorby", "Color lines by:",
+                             choices = c("month", "year", "date", "borehole", "source"),
+                             selected = "month"),
+                 tags$hr(),
+                 checkboxGroupInput("boreholes", "Boreholes:",
                                     choices = ALL_BOREHOLES, selected = c("S1", "S4")),
                  checkboxGroupInput("months", "Months:",
                                     choices = setNames(1:12, month.name),
@@ -82,8 +83,9 @@ ui <- fluidPage(
                                     selected = sort(unique(master$year))),
                  radioButtons("source", "Source:",
                               choices = c("both", "database", "xml"), selected = "both"),
-                 radioButtons("colorby", "Color lines by:",
-                              choices = c("month", "year", "date"), selected = "month"),
+                 tags$hr(),
+                 radioButtons("xml_line", "XML line style:",
+                              choices = c("solid", "dotted", "dashed"), selected = "solid"),
                  sliderInput("temp_range", "Temperature range (°C):",
                              min = 0, max = 25, value = c(5, 20), step = 0.5)
     ),
@@ -108,10 +110,17 @@ server <- function(input, output) {
     d <- filtered()
     validate(need(nrow(d) > 0, "No data for these settings — loosen the filters."))
     
-    d$color_var <- switch(input$colorby,
-                          month = as.factor(d$month_name),
-                          year  = as.factor(d$year),
-                          date  = as.factor(d$date_label))
+    pick_var <- function(name) switch(name,
+                                      month    = as.factor(d$month_name),
+                                      year     = as.factor(d$year),
+                                      date     = as.factor(d$date_label),
+                                      borehole = as.factor(d$borehole),
+                                      source   = as.factor(d$source))
+    
+    d$color_var <- pick_var(input$colorby)
+    d$facet_var <- pick_var(input$facet_by)
+    
+    lt_values <- c(database = "solid", xml = input$xml_line)
     
     p <- ggplot(d, aes(temperature_c, depth_m, group = obs_id,
                        color = color_var, linetype = source,
@@ -121,8 +130,8 @@ server <- function(input, output) {
       geom_path(linewidth = 0.5) +
       scale_y_reverse() +
       coord_cartesian(xlim = input$temp_range) +
-      scale_linetype_manual(values = c(database = "solid", xml = "dashed")) +
-      facet_wrap(~ borehole, nrow = 1) +
+      scale_linetype_manual(values = lt_values) +
+      facet_wrap(~ facet_var, nrow = 1) +
       labs(x = "Temperature (°C)", y = "Depth (m)",
            color = input$colorby, linetype = "source") +
       theme_bw()
