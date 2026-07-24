@@ -8,25 +8,25 @@ library(rio)
 sites = c("Dwnstrm", "P1", "P2", "P3", "P4", "P5", "P5_creek_cond") # Default option for all HOBO monitors. 
 dfs = list()
 level = read_csv("dtw/dtw_formatted/Bridge_formatted.csv")
-all_sheets = import_list("Well_Sampling_Data_ALL.xlsx")
-manual = bind_rows(all_sheets, .id = "Site")
-manual = read_csv("manual_to_dl - Sheet1.csv") %>% 
-  # drop_na() %>%
-  rename(SPC = `SPC bottom before`) 
-manual = manual %>% 
-  mutate(Site = case_when(
-    Location == "P1" ~ "1",
-    Location == "P2" ~ "2",
-    Location == "P3" ~ "3",
-    Location == "P4" ~ "4",
-    Location == "P5" ~ "5",
-    Location == "C1" ~ "1",
-    Location == "C2" ~ "2",
-    Location == "C3" ~ "3",
-    Location == "C4" ~ "4",
-    Location == "C5" ~ "5"
-  ), Date = mdy_hms(Date)) %>% 
-  filter(SPC < 1000 & year(Date) > 2025)
+# all_sheets = import_list("Well_Sampling_Data_ALL.xlsx")
+# manual = bind_rows(all_sheets, .id = "Site")
+# manual = read_csv("manual_to_dl - Sheet1.csv") %>% 
+#   # drop_na() %>%
+#   rename(SPC = `SPC bottom before`) 
+# manual = manual %>% 
+#   mutate(Site = case_when(
+#     Location == "P1" ~ "1",
+#     Location == "P2" ~ "2",
+#     Location == "P3" ~ "3",
+#     Location == "P4" ~ "4",
+#     Location == "P5" ~ "5",
+#     Location == "C1" ~ "1",
+#     Location == "C2" ~ "2",
+#     Location == "C3" ~ "3",
+#     Location == "C4" ~ "4",
+#     Location == "C5" ~ "5"
+#   ), Date = mdy_hms(Date)) %>% 
+#   filter(SPC < 1000 & year(Date) > 2025)
 
 for (site in sites) {
   data = read_csv(paste0("hobos/hobos_running/", site, "_current.csv"))
@@ -85,13 +85,13 @@ p4 = P1_level %>%
   # filter(datetime > "2024-11-21 11:47:50") %>% 
   ggplot(aes(x = datetime, y = height_above)) +
   geom_line() +
-  geom_line(data = df_full %>% filter(Site == "Dwnstrm" & `Date-Time` > "2026-02-03"), aes(x = `Date-Time`, y = `Specific Conductivity` / 1000, color = Site)) +
-  geom_line(data = df_full %>% filter(Site == "P5_creek_cond" & `Date-Time` > "2026-02-03"), aes(x = `Date-Time`, y = `Specific Conductivity` / 1000, color = Site)) +
-  geom_point(data = manual %>% filter(Location == "P5", Date > "2026-02-03"), aes(x = Date, y = SPC / 1000, color = Location)) +
-  scale_y_continuous(sec.axis = sec_axis(~. * 1000)) + 
-  scale_color_manual(values = pal2) +
-  labs(title = "Bridge Water Height, Downstream SPC, & P5 Well and Creek SPC") + 
-  theme_bw()
+  # geom_line(data = df_full %>% filter(Site == "Dwnstrm" & `Date-Time` > "2026-02-03"), aes(x = `Date-Time`, y = `Specific Conductivity` / 1000, color = Site)) +
+  # geom_line(data = df_full %>% filter(Site == "P5_creek_cond" & `Date-Time` > "2026-02-03"), aes(x = `Date-Time`, y = `Specific Conductivity` / 1000, color = Site)) +
+  # geom_point(data = manual %>% filter(Location == "P5", Date > "2026-02-03"), aes(x = Date, y = SPC / 1000, color = Location)) +
+  # scale_y_continuous(sec.axis = sec_axis(~. * 1000)) + 
+  # scale_color_manual(values = pal2) +
+  labs(title = "Bridge Water Height") + 
+  theme_bw(base_size = 20)
 print(p4)   
 
 
