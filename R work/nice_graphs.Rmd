@@ -72,20 +72,22 @@ rm(list = c("dfs", "result", "final", "to_filter", "data"))
 
 ```{r, fig.width=13}
 build_plot = function(df, site, metric) {
-  plot = df %>% 
+  pl_data <- df %>% 
     filter(PumpTest_Creek != "A", Well == site) %>% 
     mutate(PumpTest_Creek = ifelse(PumpTest_Creek == "B", "Well", "Creek")) %>% 
     group_by(Date_full, PumpTest_Creek) %>% 
-    summarize(avg = mean(.data[[metric]], na.rm = TRUE), .groups = "drop") %>% 
+    summarize(avg = mean(.data[[metric]], na.rm = TRUE), .groups = "drop")
     
-    
-    ggplot(aes(x = Date_full, y = avg, fill = PumpTest_Creek)) + 
+  l_lim <- min(df[[metric]], na.rm = TRUE)   
+  u_lim <- max(df[[metric]], na.rm = TRUE)
+  
+  plot <- ggplot(pl_data, aes(x = Date_full, y = avg, fill = PumpTest_Creek)) + 
       geom_path(aes(color = PumpTest_Creek)) + 
       geom_point(pch = 21, size = 2.5) + 
       theme_bw(base_size = 16) + 
       theme(plot.subtitle = element_text(size = 10)) +
       guides(color = "none") +
-      # scale_y_continuous(limits = c(0, 85)) +
+      scale_y_continuous(limits = c(l_lim, u_lim)) +
       scale_x_date(limits = range(anions$Date_full, na.rm = TRUE), date_breaks = "4 months") +
       labs(title = paste0(metric, " at ", site, ": well vs. Creek"),
            subtitle = "Well measurement taken before pumping",
@@ -175,13 +177,15 @@ cat_plot = function(df, site, metric) {
     group_by(Date, PumpTest_Creek) %>% 
     summarize(avg = mean(.data[[metric]], na.rm = TRUE), .groups = "drop") %>% 
     
+  l_lim <- min(df[[metric]], na.rm = TRUE)   
+  u_lim <- max(df[[metric]], na.rm = TRUE)
     
    ggplot(aes(x = Date, y = avg, fill = PumpTest_Creek)) + 
       geom_line(aes(color = PumpTest_Creek)) + 
       geom_point(pch = 21, size = 2.5) + 
       theme_bw(base_size = 16) + 
       theme(plot.subtitle = element_text(size = 10)) +
-      # scale_y_continuous(limits = c(0, 40)) +
+      scale_y_continuous(limits = c(l_lim, u_lim)) +
       scale_x_date(
         limits = c(min(cations$Date), max(cations$Date)),
             date_breaks = "1 month",
@@ -267,8 +271,10 @@ plot_cations("P3")
 plot_cations("P5") 
 ```
 
+## Plot 5: manual temperature data
+
 ```{r}
-my_pal = brewer.pal(n = 7, "PuBuGn")[3:7]
+my_pal_2 = brewer.pal(n = 7, "PuBuGn")[5:7]
 
 temp_plot = function(well){
   df1 = manual_well_creek %>% 
@@ -291,7 +297,7 @@ temp_plot = function(well){
     geom_line(data = df2, aes(x = Date, y = Temp_after, color = Area)) +
     geom_point(data = df3, aes(x = Date, y = Temp_before, color = Area, shape = "Before"), size = 2.5) + 
     geom_line(data = df3, aes(x = Date, y = Temp_before, color = Area)) +
-    scale_color_manual(values = my_pal_2) +
+    # scale_color_manual(values = my_pal_2) +
     theme_bw(base_size = 16) +
     scale_x_date(date_breaks = "2 months", date_labels = "%Y-%m") +
     scale_y_continuous(limits = c(0, 25)) +
@@ -306,6 +312,8 @@ p4 = temp_plot("4")
 p5 = temp_plot("5")
 ggarrange(p1, p2, p3, p4, p5, common.legend = TRUE, legend = "bottom", nrow = 2, ncol = 3)
 ```
+
+## Plot 6: manual SPC data
 
 ```{r}
 spc_plot = function(well){
@@ -329,7 +337,7 @@ spc_plot = function(well){
     geom_line(data = df2, aes(x = Date, y = SPC_after, color = Area)) +
     geom_point(data = df3, aes(x = Date, y = SPC_before, color = Area, shape = "Before"), size = 2.5) + 
     geom_line(data = df3, aes(x = Date, y = SPC_before, color = Area)) +
-    scale_color_manual(values = my_pal_2) +
+    # scale_color_manual(values = my_pal_2) +
     theme_bw(base_size = 16) +
     scale_x_date(date_breaks = "2 months", date_labels = "%Y-%m") +
     scale_y_continuous(limits = c(400, 900)) +

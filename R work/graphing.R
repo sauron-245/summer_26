@@ -10,24 +10,28 @@ dfs = list()
 level = read_csv("dtw/dtw_formatted/Bridge_formatted.csv")
 # all_sheets = import_list("Well_Sampling_Data_ALL.xlsx")
 # manual = bind_rows(all_sheets, .id = "Site")
-# manual = read_csv("manual_to_dl - Sheet1.csv") %>% 
-#   # drop_na() %>%
-#   rename(SPC = `SPC bottom before`) 
-# manual = manual %>% 
-#   mutate(Site = case_when(
-#     Location == "P1" ~ "1",
-#     Location == "P2" ~ "2",
-#     Location == "P3" ~ "3",
-#     Location == "P4" ~ "4",
-#     Location == "P5" ~ "5",
-#     Location == "C1" ~ "1",
-#     Location == "C2" ~ "2",
-#     Location == "C3" ~ "3",
-#     Location == "C4" ~ "4",
-#     Location == "C5" ~ "5"
-#   ), Date = mdy_hms(Date)) %>% 
-#   filter(SPC < 1000 & year(Date) > 2025)
+manual = read_csv("manual_to_dl.csv") %>%
+  # drop_na() %>%
+  rename(SPC = `SPC bottom before`)
 
+manual_well_creek <- read_csv("manual_to_dl.csv") %>% 
+  mutate(Site = case_when(
+    Well == "P1" ~ "1",
+    Well == "P2" ~ "2",
+    Well == "P3" ~ "3",
+    Well == "P4" ~ "4",
+    Well == "P5" ~ "5",
+    Well == "C1" ~ "1",
+    Well == "C2" ~ "2",
+    Well == "C3" ~ "3",
+    Well == "C4" ~ "4",
+    Well == "C5" ~ "5"
+  ),
+  Area = case_when(
+    str_sub(Well, 1, 1) == "P" ~ "Well",
+    str_sub(Well, 1, 1) == "C" ~ "Creek"
+  ), Date = mdy_hms(Date)) %>% 
+  filter(SPC_before < 1000, year(Date) > 2024)
 for (site in sites) {
   data = read_csv(paste0("hobos/hobos_running/", site, "_current.csv"))
   data = data %>% drop_na()
@@ -69,11 +73,14 @@ print(p2)
 # P3: manual data for 2026 at piezometers and corresponding creek locations
 
 my_pal = brewer.pal(n = 7, "PuBuGn")[3:7]
-p3 = ggplot(manual, aes(x = Date, y = SPC, color = Site, shape = Area)) + 
+p3 = ggplot(manual_well_creek, aes(x = Date, y = SPC_before / 75, color = Site, shape = Area)) + 
   geom_line(linewidth = 1) +
   geom_point(size = 3) +
+  geom_line(data = manual_well_creek %>% filter(Well == "P1"), aes(x = Date, y = Temp_before), color = 'red') +
+  geom_point(data = manual_well_creek %>% filter(Well == "P1"), aes(x = Date, y = Temp_before), color = 'red') +
   scale_color_manual(values = my_pal) +
-  theme_bw() +
+  scale_y_continuous(sec.axis = sec_axis(~. * 75)) +
+  theme_bw(base_size = 20) +
   labs(title = "2026 Manual Data by Site and Location Type")
 
 print(p3)
