@@ -22,6 +22,8 @@
 # install.packages("lubridate") 
 # install.packages("readxl")
 
+setwd("~/GitHub/summer_26/R work")
+
 library(tidyverse)
 library(lubridate)
 library(readxl)
@@ -38,8 +40,10 @@ update_hobo_log = function(site) {
     select(any_of(cols_to_check)) %>%  # References list of columns of interest and selects just columns containing real data, removing metadata/empty columns
     mutate(`Date-Time` = as.POSIXct(`Date-Time`))
   
-  if (length(names(log_new)) == 0) {
+  if (length(names(log_new)) != 6) {
+    if (length(names(log_new)) != 2) {
     stop(paste0("Check column names/format at site ", site, ".")) # This will hopefully catch issues caused by mismatched column names between the running .csv and newly uploaded data
+    }
   }
   
   if ("Temperature , °C" %in% names(log_new)){
@@ -66,7 +70,7 @@ update_hobo_log = function(site) {
 
 hobos_week = c("P5_creek_cond") # Default option for all HOBO monitors. 
 
-for (hobo in hobos_week) {
+for (hobo in hobos_all) {
   update_hobo_log(hobo)
 }
 
