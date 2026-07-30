@@ -30,7 +30,8 @@ TOP_OF_WELL_LAF <- 0
 # plausible temperature window (°C) for dropping junk fiber points
 TMP_MIN <- -20
 TMP_MAX <- 120
-
+TURNAROUND_LAF  <- 83.5   # lowest point of the well (cable turnaround), meters along fiber
+TOP_OF_WELL_LAF <- 9      # LAF where the cable enters the top of the well
 
 # lists every xml in the drive folder and parses the timestamp out of each name
 build_file_index <- function(folder_id) {
@@ -95,24 +96,14 @@ fetch_and_parse <- function(selected) {
 }
 
 
-# drops bad temps and turns length-along-fiber into depth below top-of-well
+# drops bad temps; simple depth = LAF - top-of-well (folding happens in fold_profile)
 add_depth <- function(df) {
   df %>%
     filter(TMP > TMP_MIN, TMP < TMP_MAX) %>%
-    mutate(depth_m = LAF - TOP_OF_WELL_LAF,
-           datetime = ymd_hms(start_time, tz = "UTC")) %>%
-    mutate(
-      datetime = ymd_hms(start_time, tz = "UTC"),
-      label = format(datetime, "%Y-%m-%d %H:%M"),
-      leg = if_else(LAF <= TURNAROUND_LAF, "down", "up"),
-      depth_m = if_else(LAF <= TURNAROUND_LAF,
-                        LAF - TOP_OF_WELL_LAF,
-                        2 * TURNAROUND_LAF - LAF - TOP_OF_WELL_LAF),
-      depth_ft = depth_m * 3.28084
-    ) %>%
-    filter(depth_m >= 0)          # keep only points at or below the well top
+    mutate(datetime = ymd_hms(start_time, tz = "UTC"),
+           depth_m = LAF - TOP_OF_WELL_LAF) %>%
+    filter(depth_m >= 0)
 }
-
 
 
 
@@ -130,7 +121,7 @@ cat("indexed", nrow(index), "files, spanning",
 target_hour <- 22            # hour of day (UTC, 0-23) to sample near; 12 = noon UTC (6am CST)
 
 # choose ONE mode: "day_of_month", "date_range", "single_day", or "time_window"
-mode <- "time_window"
+mode <- "single_day"
 
 # for mode = "time_window":  every measurement between two times on one day
 window_day        <- "2026-07-02"   # "YYYY-MM-DD"
@@ -145,7 +136,7 @@ range_start <- "2026-06-25"
 range_end   <- "2026-07-02"
 
 # for mode = "single_day":
-single_day  <- "2026-06-15"
+single_day  <- "2026-06-04"
 
 ############################################################
 #  (you shouldn't need to edit below here)
