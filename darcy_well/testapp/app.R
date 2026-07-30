@@ -105,27 +105,26 @@ fold_profile <- function(df) {
 
 
 ############################################################
-#  ======== FETCH SETTINGS — EDIT THIS BLOCK ========
 #  Controls which files get downloaded and parsed for the app.
-#  Pick ONE fetch_mode:
+#  Pick one fetch_mode:
 #    "time_window"  every observation between two hours on one day
 #    "date_range"   one obs/day (near target_hour) across a date range
 #    "nth_of_month" one obs (near target_hour) on the Nth of each month in a range
 #    "single_day"   every observation on one day
 ############################################################
 
-fetch_mode <- "time_window"
+fetch_mode <- "date_range"
 
 target_hour <- 22            # hour (UTC) to sample near, for the thinning modes
 
 # time_window:
-window_day        <- "2026-07-02"
+window_day        <- "2026-07-01"
 window_start_hour <- 17
 window_end_hour   <- 19
 
 # date_range:
-range_start <- "2026-06-25"
-range_end   <- "2026-07-02"
+range_start <- "2026-07-01"
+range_end   <- "2026-07-27"
 
 # nth_of_month:
 nth_day      <- 15
@@ -133,7 +132,7 @@ nth_start    <- "2025-11-01"
 nth_end      <- "2026-07-31"
 
 # single_day:
-single_day  <- "2026-06-15"
+single_day  <- "2026-06-04"
 
 ############################################################
 #  ======== (you shouldn't need to edit below) ========
