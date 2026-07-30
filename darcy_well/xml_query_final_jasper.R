@@ -130,7 +130,7 @@ cat("indexed", nrow(index), "files, spanning",
 target_hour <- 22            # hour of day (UTC, 0-23) to sample near; 12 = noon UTC (6am CST)
 
 # choose ONE mode: "day_of_month", "date_range", "single_day", or "time_window"
-mode <- "time_window"
+mode <- "date_range"
 
 # for mode = "time_window":  every measurement between two times on one day
 window_day        <- "2026-07-02"   # "YYYY-MM-DD"
@@ -141,8 +141,8 @@ window_end_hour   <- 19             # end hour (UTC, 0-23)
 day_of_month <- 15
 
 # for mode = "date_range":
-range_start <- "2026-06-25"
-range_end   <- "2026-07-02"
+range_start <- "2026-07-01"
+range_end   <- "2026-07-05"
 
 # for mode = "single_day":
 single_day  <- "2026-06-15"
