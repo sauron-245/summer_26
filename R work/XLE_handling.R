@@ -1,7 +1,7 @@
 ### Instructions:
 # 1. Make sure there are no files in folder 'dtw_upload' and that the only file in 'dtw_formatted' is 'P1_baro_formatted'. 
 # 2. Drop new XLE files into folder 'dtw_upload' and give them the following names as appropriate: "P1_baro", "P1", "Bridge", "P5"
-# 3. Run all uncommented code. This will format the xle files and drop them into 'dtw_formatted' as .csvs.
+# 3. Run all lines of code. This will format the xle files and drop them into 'dtw_formatted' as .csvs.
 # 4. To check graphs of water level at the bridge, P1, and P5, run the extra code at the bottom.
 
 # This will need to be adjusted to transform water height to height above sea level. I'll wait to do this until we've surveyed Bell Filed etc
@@ -126,8 +126,8 @@ handle_xle = function(location, elevation = NULL) {
 
 ## Set up list of sites and handle files
 
-sites = c("Bridge", "P1", "P5", "P1_baro")
-elevations = c(273.2, 273.3, 274.3, NA)
+sites = c("P1_baro", "Bridge", "P1", "P5")
+elevations = c(NA, 273.2, 273.3, 274.3)
 results = Map(handle_xle, sites, elevations) # This is the line that iterates over the leveloggers to clean up the xle files. It takes the 4 sites and 3 elevation correction factors used 
                                              # to transform height above sensor to elevation of water. N.B. there are only 3 elevations because the P1 barologger doesn't take one 
                                              # and the function is setup to handle the missing value. 
@@ -143,7 +143,8 @@ check_csv = function(location) { # Use this to make graphs of temperature over t
   p = file %>%
     ggplot(aes(x = datetime, y = water_elevation)) +
     geom_line() +
-    labs(title = location)
+    theme_bw(base_size = 15) +
+    labs(title = location, x = "Date", y = "Water Elevation (m above sea level)")
   print(p)
   }
 }
