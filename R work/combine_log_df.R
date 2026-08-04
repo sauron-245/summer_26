@@ -68,9 +68,9 @@ update_hobo_log = function(site) {
   write_csv(log_standing_updated, paste0("hobos/hobos_running/", site, "_current.csv")) 
 }
 
-hobos_week = c("P5_creek_cond") # Default option for all HOBO monitors. 
+hobos_week = c("P1", "P1_creek", "P2", "P2_creek", "P3", "Mdstrm", "P4", "P4_creek", "P5", "P5_creek", "P5_creek_cond")
 
-for (hobo in hobos_all) {
+for (hobo in hobos_week) {
   update_hobo_log(hobo)
 }
 
@@ -86,7 +86,7 @@ check_csv = function(site) { # Use this to make graphs of temperature over time.
   print(p)
   }
 
-for (hobo in hobos_all) {
+for (hobo in hobos_week) {
   check_csv(hobo)
 }
 
