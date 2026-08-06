@@ -4,8 +4,6 @@
 # 3. Run all lines of code. This will format the xle files and drop them into 'dtw_formatted' as .csvs.
 # 4. To check graphs of water level at the bridge, P1, and P5, run the extra code at the bottom.
 
-# This will need to be adjusted to transform water height to height above sea level. I'll wait to do this until we've surveyed Bell Filed etc
-
 
 
 #### Install dependencies ####
@@ -144,7 +142,7 @@ check_csv = function(location) { # Use this to make graphs of temperature over t
     ggplot(aes(x = datetime, y = water_elevation)) +
     geom_line() +
     theme_bw(base_size = 15) +
-    labs(title = location, x = "Date", y = "Water Elevation (m above sea level)")
+    labs(title = paste0("Water Height at ", location), x = "Date", y = "Water Elevation (m above sea level)")
   print(p)
   }
 }
