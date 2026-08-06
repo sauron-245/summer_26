@@ -4,7 +4,8 @@ library(lubridate)
 library(patchwork)
 
 geoloop = read_excel("geoloop.xlsx") %>% 
-  mutate(TIMESTAMP = as_datetime(TIMESTAMP), GeoloopToBldgT = (GeoloopToBldgT - 32) * 5/9, GeoloopFromBldgT = (GeoloopFromBldgT - 32) * 5/9)
+  mutate(TIMESTAMP = as_datetime(TIMESTAMP), GeoloopToBldgT = (GeoloopToBldgT - 32) * 5/9, GeoloopFromBldgT = (GeoloopFromBldgT - 32) * 5/9) %>% 
+  filter(GeoloopToBldgT <= 20)
 zentra = read_csv("zentra.csv") %>% 
   rename(TIMESTAMP = `z6-22205`, water_level_m = `Port1...2`, water_temp = `Port1...3`) %>% 
   mutate(water_level_m = as.numeric(water_level_m) / 1000, water_temp = as.numeric(water_temp), TIMESTAMP = mdy_hms(TIMESTAMP)) %>% 
@@ -27,24 +28,24 @@ geoloop %>%
   theme_bw() 
   # labs(title = "sum bs idk")
 
-dates = c("2026-07-06")
+dates = c("2026-06-30", "2026-07-01")
 
 P1 = geoloop %>% 
-  # filter(date(TIMESTAMP) %in% dates, hour(TIMESTAMP) <= 12) %>%
+  filter(date(TIMESTAMP) %in% dates) %>%
   ggplot() + 
   geom_line(aes(x = TIMESTAMP, y = GeoloopToBldgT)) +
   theme_bw(base_size = 15) +
   labs(title = "Production Well Return Water Temperature", x = "Date/Time", y = "Water Temp (Deg. C)")
 
 P4 = geoloop %>% 
-  # filter(date(TIMESTAMP) %in% dates, hour(TIMESTAMP) <= 12) %>%
+  filter(date(TIMESTAMP) %in% dates) %>%
   ggplot() + 
-  geom_line(aes(x = TIMESTAMP, y = VFDFreq)) +
+  geom_line(aes(x = TIMESTAMP, y = GeoloopGPM)) +
   theme_bw(base_size = 15) +
-  labs(title = "Production Well Pump Frequency (30 = ON)", x = "Date/Time", y = "Signal Frequency")
+  labs(title = "Geoloop Flow Rate", x = "Date/Time", y = "Flow Rate (GPM")
 
 P2 = zentra %>% 
-  # filter(date(TIMESTAMP) %in% dates, hour(TIMESTAMP) <= 12) %>%
+  filter(date(TIMESTAMP) %in% dates) %>%
   ggplot(aes(x = TIMESTAMP, y = water_level_m)) + 
   geom_line() +
   # geom_smooth(method = 'gam', se = FALSE, color = 'blue', formula = y ~ s(x, k = 40, bs = "cs")) +
@@ -52,7 +53,7 @@ P2 = zentra %>%
   labs(title = "Observation Well Water Height", x = "Date/Time", y = "Water Height (M)")
 
 P3 = zentra %>% 
-  # filter(date(TIMESTAMP) %in% dates, hour(TIMESTAMP) <= 12) %>%
+  filter(date(TIMESTAMP) %in% dates) %>%
   ggplot(aes(x = TIMESTAMP, y  = water_temp)) + 
   geom_line() +
   # geom_smooth(method = 'gam', se = FALSE, color = 'blue', formula = y ~ s(x, k = 40, bs = "cs")) +
@@ -65,7 +66,14 @@ P5 = parish %>%
   theme_bw() +
   labs(title = "DTS Fiber Temp", x = "Date/Time", y = "Water Temp (Deg. C)")
 
-P4 / P1 / P3 / P2  + plot_layout(axes = "collect")
+P6 = geoloop %>% 
+  filter(date(TIMESTAMP) %in% dates) %>%
+  ggplot() + 
+  geom_line(aes(x = TIMESTAMP, y = VFDFreq)) +
+  theme_bw(base_size = 15) +
+  labs(title = "Production Well Pump Frequency (30 = ON)", x = "Date/Time", y = "Signal Frequency")
+
+P4 / P6 / P1 / P2  + plot_layout(axes = "collect")
 
 ggplot(zentra, aes(x = water_level_m, y = water_temp, color = TIMESTAMP)) + 
   geom_jitter() + 

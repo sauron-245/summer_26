@@ -17,7 +17,7 @@
 # 6. Once code has run without issue, delete all files in 'hobos/hobos_upload'.          
 
 
-## Comment in if packages have not been installed: 
+##### Comment in if packages have not been installed: #####
 # install.packages("tidyverse")
 # install.packages("lubridate") 
 # install.packages("readxl")
@@ -67,15 +67,16 @@ update_hobo_log = function(site) {
   
   write_csv(log_standing_updated, paste0("hobos/hobos_running/", site, "_current.csv")) 
 }
-
+##### Edit this vector if NOT updating all hobo logs: #####
 hobos_week = c("P1", "P1_creek", "P2", "P2_creek", "P3", "Mdstrm", "P4", "P4_creek", "P5", "P5_creek", "P5_creek_cond")
 
+##### Modify this line if not using 'hobos-all': #####
 for (hobo in hobos_week) {
   update_hobo_log(hobo)
 }
 
 ## By default, the above for loop updates all running hobo data. In order to target updates to specific files, (for instance, if you missed a hobo in the field),
-## replace 'hobos_all' with a vector containing just the sites of interest (e.g. c("P1", "P3", "P5_creek")).
+## replace 'hobos_all' with a vector containing just the sites of interest (e.g. c("P1", "P3", "P5_creek")). Modifying 'hobos-week' is the easiest way to do this.
 
 check_csv = function(site) { # Use this to make graphs of temperature over time. Intended to check that dates/expected data gaps are behaving as they ought. 
   file = read_csv(paste0("hobos/hobos_running/", site, "_current.csv")) 
@@ -86,6 +87,7 @@ check_csv = function(site) { # Use this to make graphs of temperature over time.
   print(p)
   }
 
+##### Modify this line if not using 'hobos-all': #####
 for (hobo in hobos_week) {
   check_csv(hobo)
 }

@@ -1,4 +1,4 @@
-### Instructions:
+#### Instructions: ####
 # 1. Make sure there are no files in folder 'dtw_upload' and that the only file in 'dtw_formatted' is 'P1_baro_formatted'. 
 # 2. Drop new XLE files into folder 'dtw_upload' and give them the following names as appropriate: "P1_baro", "P1", "Bridge", "P5"
 # 3. Run all lines of code. This will format the xle files and drop them into 'dtw_formatted' as .csvs.
@@ -8,7 +8,7 @@
 
 
 
-## Install dependencies etc
+#### Install dependencies ####
 
 # install.packages("lubridate")
 # install.packages("xml2")
@@ -50,7 +50,7 @@ CleanData = function(df){
     
     # detect start of a new erroneous block
     if (diff_val > 0.15 && !in_block) { # This is the best threshold for incorrect logger placement I've found for now -- basically, if there's a jump in water level of more than 
-                                       # 0.2 meters, the loop goes into error correction mode and starts applying a correction to all following erroneous datapoints.
+                                       # 0.15 meters, the loop goes into error correction mode and starts applying a correction to all following erroneous datapoints.
                                        # Adjust if it starts correcting drops caused by actual change in water level. Maybe adjust to percent change?
       correction <- diff_val   # lock in the correction for this block
       in_block <- TRUE
