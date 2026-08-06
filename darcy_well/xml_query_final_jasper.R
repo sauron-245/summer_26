@@ -31,7 +31,6 @@ TOP_OF_WELL_LAF <- 0
 TMP_MIN <- -20
 TMP_MAX <- 120
 
-
 # lists every xml in the drive folder and parses the timestamp out of each name
 build_file_index <- function(folder_id) {
   items <- drive_find(q = sprintf("'%s' in parents", folder_id),
@@ -130,19 +129,19 @@ cat("indexed", nrow(index), "files, spanning",
 target_hour <- 22            # hour of day (UTC, 0-23) to sample near; 12 = noon UTC (6am CST)
 
 # choose ONE mode: "day_of_month", "date_range", "single_day", or "time_window"
-mode <- "date_range"
+mode <- "time_window"
 
 # for mode = "time_window":  every measurement between two times on one day
-window_day        <- "2026-07-02"   # "YYYY-MM-DD"
-window_start_hour <- 17              # start hour (UTC, 0-23)
-window_end_hour   <- 19             # end hour (UTC, 0-23)
+window_day        <- "2026-07-06"   # "YYYY-MM-DD"
+window_start_hour <- 0              # start hour (UTC, 0-23)
+window_end_hour   <- 23           # end hour (UTC, 0-23)
 
 # for mode = "day_of_month":
 day_of_month <- 15
 
 # for mode = "date_range":
 range_start <- "2026-07-01"
-range_end   <- "2026-07-05"
+range_end   <- "2026-07-30"
 
 # for mode = "single_day":
 single_day  <- "2026-06-15"
@@ -231,7 +230,7 @@ folded <- fold_profile(dat)
 #  Each queried observation gets its own color; solid = cable going down,
 #  dashed = cable coming back up. Overlapping solid/dashed = good symmetry.
 
-plot_data <- folded %>% filter(SHOW_UP_LEG | leg == "down")
+plot_data <- folded %>% filter(leg == "down")
 
 comparison_plot1 <- ggplot(data = plot_data,
                            mapping = aes(TMP, depth_ft, color = label, linetype = leg,
