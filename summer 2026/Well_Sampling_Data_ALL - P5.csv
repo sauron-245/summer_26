@@ -1,0 +1,53 @@
+Well,Date,Depth to water,Temp top before,Temp bottom before,SPC top before,SPC bottom before,Cond top before ,Cond bottom before ,TDS top before,TDS bottom before,Pump time,Recharge time,Temp top after,Temp bottom after,SPC top after,SPC bottom after,Cond top after,Cond bottom after,TDS top after,TDS bottom after,Notes
+P5,6/25/2024 0:00:00,,19.1,,,,,,na,,,,,,,,,,,,
+P5,6/27/2024 0:00:00,,,,,,,,,,,,,,,,,,,,NOTE: Jeremiah's spc values seem really low compared to our continuous and manual data. Are these maybe normal conductivity?
+P5,6/29/2024 0:00:00,,12.1,,481.7,,,,0.23,,,,,,,,,,,,
+P5,7/6/2024 0:00:00,,13.9,,438.8,,,,0.2,,,,,,,,,,,,
+P5,7/8/2024 0:00:00,,13.2,,447.9,,,,0.2,,,,,,,,,,,,
+P5,7/10/2024 0:00:00,,13.5,,446.9,,,,0.2,,,,,,,,,,,,
+P5,7/16/2024 0:00:00,,13.1,,460.9,,,,0.2,,,,,,,,,,,,
+P5,7/19/2024 0:00:00,,13.4,,431.1,,,,0.2,,,,,,,,,,,,
+P5,7/23/2024 0:00:00,,13.5,,435.8,,,,0.2,,,,,,,,,,,,
+P5,7/26/2024 0:00:00,,13.2,,462.7,,,,0.2,,,,,,,,,,,,
+P5,7/28/2024 0:00:00,,13.7,,431.7,,,,0.2,,,,,,,,,,,,
+P5,7/30/2024 0:00:00,,13.2,,446.6,,,,0.2,,,,,,,,,,,,
+P5,8/2/2024 0:00:00,,13.7,,431,,,,0.2,,,,,,,,,,,,
+P5,8/3/2024 0:00:00,,22.8,,572,,,,0.3,,,,,,,,,,,,
+P5,8/31/2024 0:00:00,,13.3,,434.5,,,,0.2,,,,,,,,,,,,
+P5,9/4/2024 0:00:00,,12.9,,435.2,,,,0.2,,,,,,,,,,,,
+P5,9/7/2024 0:00:00,,13.2,,395.7,,,,0.2,,,,,,,,,,,,
+P5,9/18/2024 0:00:00,,13.2,,395,,,,0.2,,,,,,,,,,,,
+P5,9/23/2024 0:00:00,,12.9,,392.5,,,,0.2,,,,,,,,,,,,
+P5,10/4/2024 0:00:00,,13.2,,390,,,,0.2,,,,,,,,,,,,
+P5,10/21/2024 0:00:00,,12.4,,421.7,,,,0.2,,,,,,,,,,,,
+P5,10/10/2024 0:00:00,,13.1,,389.3,,,,0.3,,,,,,,,,,,,
+P5,10/17/2024 0:00:00,,12.5,,407.8,,,,0.2,,,,,,,,,,,,
+P5,10/21/2024 0:00:00,,12.4,,421.7,,,,0.2,,,,,,,,,,,,
+P5,11/1/2024 0:00:00,,12,,457.4,,,,0.3,,,,,,,,,,,,
+P5,9/30/2025 0:00:00,12.24,13.1,,664,,513,,0.3,,,,13.7,11.4,,516,,664,,0.3,
+P5,10/7/2025 0:00:00,12.2,13.3,10.6,670,697,519,505,0.3,0.3,,,13.6,10.7,542,505,693,693,0.3,0.3,Pump not strong enough to pump from bottom of well # 5. We made a suction to draw new water in and sampled again.
+P5,10/14/2025 0:00:00,,12.9,11.9,687,691,529,518,0.3,0.3,,,,,,,,,,,Didn't measure DTW or pump or measure after
+P5,10/28/2025 0:00:00,12.25,12.7,11.4,697,701,533,520,0.3,0.3,,,12.3,12.3,534,534,705,705,0.3,0.3,"Not at bottom, 17.2ft from top of well Tried to pump to create suction and draw new water in, no water was removed Not at bottom, 12.9ft from top of well"
+P5,11/4/2025 0:00:00,12.24,12.3,10.5,709,719,536,520,0.3,0.4,,,12.4,10.5,540,453.2,712,626,0.3,0.3,"Pumped to create suction, but no water was removed"
+P5,11/11/2025 0:00:00,12.21,11.8,10.4,704,716,526,519,0.3,0.4,,,11.4,10.4,707,683,523,492,0.3,0.3,
+P5,11/18/2025 0:00:00,12.21,10.8,10.3,698,723,507,521,0.3,0.4,,,10.4,10.3,710,670,513,483,0.3,0.3,"Pumped to create suction, but no water was removed"
+P5,1/6/2026 0:00:00,12.38,9.5,9.3,712,707,503,496,0.3,0.3,,,8.3,9.1,698,703,476,490,0.3,0.3,"pump not working so not able to take after measurments, tried to create suction but not sure if it was effective since pump wasn't working"
+P5,1/13/2026 0:00:00,12.37,8.7,9.7,695,679,478,480,0.3,0.3,,,7.9,9.5,730,685,492,482,0.4,0.3,"Pumped to create suction, but no water was removed"
+P5,2/3/2026 0:00:00,12.46,8.3,9.2,691,683,472,977,0.3,0.3,,,,,,,,,,,"Pumped to create suction, but no water was removed"
+P5,2/17/2026 0:00:00,12.39,8.7,9.2,708,689,489,481,0.3,0.3,,,8.9,9.4,707,623,491,437.3,0.3,0.3,"Pumped to create suction, but no water was removed"
+P5,2/24/2026 0:00:00,12.4,8.3,9.1,708,691,483,481,0.3,0.3,,,7.6,9.2,712,695,476,485,0.3,0.3,"Pumped to create suction, but no water was removed, water in culvert was not flowing so we measured the standing water. Yesterday it rained "
+P5,3/3/2026 0:00:00,12.43,8.2,9.1,706,686,484,478,0.3,0.3,,,8.6,8.4,699,691,479,741,0.3,0.3,"pumped to create suction, small amount of water was removed (may have been left over in pump"
+P5,3/10/2026 0:00:00,12.4,7.7,9,692,681,464,473,0.3,0.3,,,8.1,9.1,702,656,476,456,0.3,0.3,"Pumped to create suction, but no water was removed, water in culvert was not flowing so we measured the standing water."
+P5,3/31/2026 0:00:00,12.42,7.6,9.1,690,638,462,443.7,0.3,0.3,,,9.7,9.4,732,643,520,451.9,0.4,0.3,"small HOBO (temp) in creek was not submerged upon arrival. Pumped to create suction, but no water was removed, water in culvert was not flowing-did not measure"
+P5,4/7/2026 0:00:00,12.33,8.8,8.9,696,656,476,454.7,0.3,0.3,,,8,8.6,702,692,477,475,0.3,0.3,"Pumped to create suction, but no water was removed, water in culvert was not flowing-did not measure"
+P5,4/14/2026 0:00:00,12.25,8.6,9.1,695,686,483,478,0.3,0.3,,,12,10.1,740,578,554,414.7,0.4,0.3,"Pumped to create suction, but no water was removed, water in culvert was not flowing so we measured the standing water."
+P5,4/21/2026 0:00:00,12.36,8.9,9.4,709,623,492,438.5,0.3,0.3,,,9.8,9.7,730,608,520,430.8,0.4,0.3,"Pumped to create suction, but no water was removed, water in culvert was not flowing - did not measure"
+P5,4/28/2026 0:00:00,12.33,8.5,9.3,689,695,472,486,0.3,0.3,,,9.3,9.2,704,693,493,485,0.3,0.3,"Pumped to create suction, but no water was removed, water in culvert was barely flowing, likely is left over rain water from yesterday"
+P5,5/12/2026 0:00:00,12.41,9.8,9.7,691,679,494,481,0.3,0.3,,,10.4,9.8,688,685,496,486,0.3,0.3,"Pumped to create suction, but no water was removed, water in culvert was barely flowing"
+P5,5/19/2026 0:00:00,12.33,9.8,9.8,689,684,487,485,0.3,0.3,,,10.7,10.9,729,643,533,468,0.4,0.3,"Pumped to create suction, but no water was removed, water in culvert was barely flowing, likely is left over rain water from yesterday"
+P5,5/26/2026 0:00:00,12.43,10.6,9.9,686,603,494,429.7,0.3,0.3,,,11.4,10.5,723,605,537,,0.4,0.3,"Pumped to create suction, but no water was removed, water in culvert was barely flowing, likely is left over rain water from 2 nights ago"
+P5,6/16/2026 0:00:00,12.5,11.3,10.1,677,684,500,489,0.3,0.3,,,11.4,11.1,674,688,500,493,0.3,0.3,"Pumped to create suction, removed a small volume of water. Syringe failure caused ~15 minute delay in sampling."
+P5,6/23/2026 0:00:00,12.5,11.9,10.2,707,715,530,513,0.3,0.3,,,12.4,11.2,705,703,534,517,0.3,0.3,"Pumped to create suction, no water removed. No water in culvert"
+P5,6/30/2026 0:00:00,12.45,12,10.3,672,706,525,508,0.3,0.3,,,12.7,10.2,704,672,538,483,0.3,0.3,"Pumped to create suction, no water removed. No water in culvert"
+P5,7/14/2026 0:00:00,12.48,13.2,11.5,700,699,538,519,0.3,0.3,,,14.1,10.5,715,718,569,522,0.4,0.4,"Pumped to create suction, no water removed. No water in culvert"
+P5,7/27/2026 0:00:00,12.45,13,10.9,705,705,544,517,0.3,0.3,,,13,10.3,706,712,544,514,0.3,0.3,"Pumped to create suction, no water removed. No water in culvert"
