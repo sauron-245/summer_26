@@ -19,7 +19,7 @@ library(xml2)
 library(XML)
 library(pracma)
 
-
+setwd("~/GitHub/summer_26/R work")
 
 ## Data cleaning
 
@@ -77,10 +77,9 @@ handle_xle = function(location, elevation = NULL) {
   cols_of_interest = vector("list", length(items_to_pull))
   names(cols_of_interest) = result # Set up column names for final dataframe
  
-  if (location != "P1_baro") { # only do this if it's a levelogger and not a barologger
+  if (!is.null(elevation)) { # only do this if it's a levelogger and not a barologger
    p1_baro = read_csv("dtw/dtw_formatted/P1_baro_formatted.csv")
   }
-  
   
   path = paste0("dtw/dtw_upload/", location, ".xle")
   xle_file = read_xml(path) # Read in file
@@ -96,15 +95,21 @@ handle_xle = function(location, elevation = NULL) {
   }
   
   df = as.data.frame(cols_of_interest, stringsAsFactors = FALSE) %>% # Turn vector of lists into dataframe 
-    mutate(Date = ymd(Date), datetime = paste(Date, Time, sep = " "), datetime = ymd_hms(datetime), Temperature = as.numeric(Temperature), Pressure = as.numeric(Pressure)) %>% # merge 'date' and 'time' columns into formatted datetime
+    mutate(Date = ymd(Date),
+           datetime = paste(Date, Time, sep = " "),
+           datetime = ymd_hms(datetime),
+           Temperature = as.numeric(Temperature),
+           Pressure = as.numeric(Pressure)) %>% # merge 'date' and 'time' columns into formatted datetime
     select(c(-1, -2)) %>% 
     relocate(datetime) # Clean up
   
- if (location != "P1_baro"){ # only do this if it's a levelogger and not a barologger
+ if (!is.null(elevation)){ # only do this if it's a levelogger and not a barologger
    df = df %>%
     mutate(datetime_rounded = round_date(datetime, unit = "15 mins")) %>% # Round time to align with barometric pressure reading
-    left_join(p1_baro %>% select(datetime, Pressure), by = join_by(datetime_rounded == datetime)) %>% # attach pressure data
-    mutate(baro_pressure = (Pressure.y * 0.101972), height_above = (Pressure.x - baro_pressure)) %>%  # Convert atmospheric pressure to feet then subtract off
+    left_join(p1_baro %>% select(datetime, Pressure),
+              by = join_by(datetime_rounded == datetime)) %>% # attach pressure data
+    mutate(baro_pressure = (Pressure.y * 0.101972),
+           height_above = (Pressure.x - baro_pressure)) %>%  # Convert atmospheric pressure to feet then subtract off
     drop_na() %>% 
     relocate(datetime_rounded) # Clean up
    
@@ -112,7 +117,9 @@ handle_xle = function(location, elevation = NULL) {
    
   if (!is.null(elevation)){
     df = df %>% 
-      mutate(water_elevation = height_above + elevation) # Transform height of water above sensor 
+      mutate(water_elevation = height_above + elevation) %>%  # Transform height of water above sensor 
+      select(c(-4, -5, -6)) %>% 
+      rename(water_pressure = Pressure.x)
   }
    
  }

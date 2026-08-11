@@ -68,10 +68,10 @@ update_hobo_log = function(site) {
   write_csv(log_standing_updated, paste0("hobos/hobos_running/", site, "_current.csv")) 
 }
 ##### Edit this vector if NOT updating all hobo logs: #####
-hobos_week = c("P1", "P1_creek", "P2", "P2_creek", "P3", "Mdstrm", "P4", "P4_creek", "P5", "P5_creek", "P5_creek_cond")
+hobos_week = c("P5")
 
 ##### Modify this line if not using 'hobos-all': #####
-for (hobo in hobos_week) {
+for (hobo in hobos_all) {
   update_hobo_log(hobo)
 }
 
@@ -81,14 +81,14 @@ for (hobo in hobos_week) {
 check_csv = function(site) { # Use this to make graphs of temperature over time. Intended to check that dates/expected data gaps are behaving as they ought. 
   file = read_csv(paste0("hobos/hobos_running/", site, "_current.csv")) 
   p = file %>% 
-  ggplot(aes(x = `Date-Time`, y = Temperature)) +
+  ggplot(aes(x = `Date-Time`, y = `Temperature`)) +
     geom_line() + 
     labs(title = paste0("Temperature at ", site, " from ", min(file$`Date-Time`), " to ", max(file$`Date-Time`)))
   print(p)
   }
 
 ##### Modify this line if not using 'hobos-all': #####
-for (hobo in hobos_week) {
+for (hobo in hobos_all) {
   check_csv(hobo)
 }
 

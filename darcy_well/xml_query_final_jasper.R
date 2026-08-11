@@ -185,19 +185,19 @@ pick_files <- function() {
 
 picks <- pick_files()
 
-# quick check: what did you actually get?
-cat("selected", nrow(picks), "files\n")
-picks %>% mutate(date = as_date(datetime)) %>% distinct(date) %>% arrange(date) %>% print(n = 50)
-
-# fetch and add depth
-dat <- fetch_and_parse(picks) %>% add_depth()
-
 # well geometry (should be fixed) 
 
 TURNAROUND_LAF  <- 83.5   # lowest point of the well (cable turnaround), in meters along fiber
 TOP_OF_WELL_LAF <- 9      # LAF where the cable enters the top of the well; depth = LAF - this
 TMP_MIN <- -20            # drop physically impossible temperatures
 TMP_MAX <- 120
+
+# quick check: what did you actually get?
+cat("selected", nrow(picks), "files\n")
+picks %>% mutate(date = as_date(datetime)) %>% distinct(date) %>% arrange(date) %>% print(n = 50)
+
+# fetch and add depth
+dat <- fetch_and_parse(picks) %>% add_depth()
 
 
 # folds one profile: splits into down/up legs, converts each to true depth,

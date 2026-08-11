@@ -12,7 +12,7 @@ zentra = read_csv("zentra.csv") %>%
   slice(3:n()) %>% 
   select(1:4) %>% 
   filter(TIMESTAMP >= "2026-06-30 00:01:00", TIMESTAMP <= "2026-07-27 23:59:00")
-parish = read_csv("parish_dts_0806.csv")
+parish = read_csv("dts_0706.csv")
 
 geoloop %>% 
   # mutate(diff = GeoloopToBldgT - GeoloopFromBldgT) %>% 
@@ -28,7 +28,7 @@ geoloop %>%
   theme_bw() 
   # labs(title = "sum bs idk")
 
-dates = c("2026-07-06", "2026-07-07")
+dates = c("2026-07-23", "2026-07-24", "2026-07-25")
 
 P1 = geoloop %>% 
   filter(date(TIMESTAMP) %in% dates) %>%
@@ -68,11 +68,11 @@ P7 = zentra %>%
   theme_bw(base_size = 15) +
   labs(title = "Observation Well Specific Conductivity", x = "Date/Time", y = "SPC (Us/cm)")
 
-P5 = parish %>% 
-  ggplot(aes(x = datetime, y = TMP)) + 
-  geom_line() + 
-  theme_bw() +
-  labs(title = "DTS Fiber Temp", x = "Date/Time", y = "Water Temp (Deg. C)")
+# P5 = parish %>%
+#   # ggplot(aes(x = datetime, y = TMP)) +
+#   geom_line() +
+#   theme_bw() +
+#   labs(title = "DTS Fiber Temp", x = "Date/Time", y = "Water Temp (Deg. C)")
 
 P6 = geoloop %>% 
   filter(date(TIMESTAMP) %in% dates) %>%
@@ -81,7 +81,7 @@ P6 = geoloop %>%
   theme_bw(base_size = 15) +
   labs(title = "Production Well Pump Frequency (30 = ON)", x = "Date/Time", y = "Signal Frequency")
 
-P6 / P1 / P2 / P3  + plot_layout(axes = "collect")
+P7 / P3 / P1 / P6  + plot_layout(axes = "collect")
 
 ggplot(zentra, aes(x = water_level_m, y = water_temp, color = TIMESTAMP)) + 
   geom_jitter() + 
