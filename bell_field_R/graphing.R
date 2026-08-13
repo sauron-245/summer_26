@@ -1,0 +1,134 @@
+library(tidyverse)
+library(lubridate)
+library(pracma)
+library(scico)
+library(RColorBrewer)
+library(rio)
+
+sites = c("Dwnstrm", "P1", "P2", "P3", "P4", "P5", "P5_creek_cond") # Default option for all HOBO monitors. 
+dfs = list()
+level = read_csv("dtw/dtw_formatted/Bridge_formatted.csv")
+# all_sheets = import_list("Well_Sampling_Data_ALL.xlsx")
+# manual = bind_rows(all_sheets, .id = "Site")
+manual = read_csv("manual_to_dl.csv") %>%
+  # drop_na() %>%
+  rename(SPC = `SPC bottom before`)
+
+manual_well_creek <- read_csv("manual_to_dl.csv") %>% 
+  mutate(Site = case_when(
+    Well == "P1" ~ "1",
+    Well == "P2" ~ "2",
+    Well == "P3" ~ "3",
+    Well == "P4" ~ "4",
+    Well == "P5" ~ "5",
+    Well == "C1" ~ "1",
+    Well == "C2" ~ "2",
+    Well == "C3" ~ "3",
+    Well == "C4" ~ "4",
+    Well == "C5" ~ "5"
+  ),
+  Area = case_when(
+    str_sub(Well, 1, 1) == "P" ~ "Well",
+    str_sub(Well, 1, 1) == "C" ~ "Creek"
+  ), Date = mdy_hms(Date)) %>% 
+  filter(SPC_before < 1000, year(Date) > 2024)
+for (site in sites) {
+  data = read_csv(paste0("hobos/hobos_running/", site, "_current.csv"))
+  data = data %>% drop_na()
+  to_filter = data$'Specific Conductivity'
+  result = hampel(to_filter, k = 100, t0 = 2)
+  final = data %>% slice(-result$ind)
+  
+  
+  dfs[[site]] = final[, c("Date-Time", "Specific Conductivity")]
+}
+
+df_full = bind_rows(dfs, .id = "Site") %>% drop_na()
+
+
+
+df_mod = df_full %>% filter(Site != "P5_creek_cond", Site != "Dwnstrm")
+P1 = df_full %>% filter(Site == "P1", `Date-Time` > "2026-02-03 14:30:00")
+P5 = df_full %>% filter(Site == "P5", `Date-Time` > "2026-02-03 14:30:00")
+P1_level = read_csv("dtw/dtw_formatted/P1_formatted.csv")
+
+# P1: SPC at all piezometers without creek
+
+p1 = ggplot(df_mod, aes(x = `Date-Time`, y = `Specific Conductivity`, color = Site))+ 
+  geom_line() + 
+  theme_bw() +
+  labs(title = "SPC at all well monitors")
+
+print(p1)
+
+# P2: SPC at all piezometers with creek at P1 and P5
+
+p2 = ggplot(df_full, aes(x = `Date-Time`, y = `Specific Conductivity`, color = Site))+ 
+  geom_line() +
+  theme_bw () + 
+  labs(title = "SPC at all monitors, including stream loggers")
+
+print(p2)
+
+# P3: manual data for 2026 at piezometers and corresponding creek locations
+
+my_pal = brewer.pal(n = 7, "PuBuGn")[3:7]
+p3 = ggplot(manual_well_creek, aes(x = Date, y = SPC_before / 75, color = Site, shape = Area)) + 
+  geom_line(linewidth = 1) +
+  geom_point(size = 3) +
+  geom_line(data = manual_well_creek %>% filter(Well == "P1"), aes(x = Date, y = Temp_before), color = 'red') +
+  geom_point(data = manual_well_creek %>% filter(Well == "P1"), aes(x = Date, y = Temp_before), color = 'red') +
+  scale_color_manual(values = my_pal) +
+  scale_y_continuous(sec.axis = sec_axis(~. * 75)) +
+  theme_bw(base_size = 20) +
+  labs(title = "2026 Manual Data by Site and Location Type")
+
+print(p3)
+
+# P4: spc at P5 vs. levellogger at bridge
+
+pal2 = brewer.pal(n = 4, "Set2")[1:4]
+p4 = P1_level %>% 
+  # filter(datetime > "2024-11-21 11:47:50") %>% 
+  ggplot(aes(x = datetime, y = height_above)) +
+  geom_line() +
+  # geom_line(data = df_full %>% filter(Site == "Dwnstrm" & `Date-Time` > "2026-02-03"), aes(x = `Date-Time`, y = `Specific Conductivity` / 1000, color = Site)) +
+  # geom_line(data = df_full %>% filter(Site == "P5_creek_cond" & `Date-Time` > "2026-02-03"), aes(x = `Date-Time`, y = `Specific Conductivity` / 1000, color = Site)) +
+  # geom_point(data = manual %>% filter(Location == "P5", Date > "2026-02-03"), aes(x = Date, y = SPC / 1000, color = Location)) +
+  # scale_y_continuous(sec.axis = sec_axis(~. * 1000)) + 
+  # scale_color_manual(values = pal2) +
+  labs(title = "Bridge Water Height") + 
+  theme_bw(base_size = 20)
+print(p4)   
+
+
+
+df_full %>% 
+  filter(`Date-Time` > "2026-01-01") %>% 
+  ggplot(aes(x = `Date-Time`, y = `Specific Conductivity`, color = Site))+ 
+  geom_line() +
+  theme_minimal()
+
+p5 = ggplot(manual %>% filter(Location == "P1" | Location == "C1"), aes(x = Date, y = SPC, color = Location)) + 
+  geom_point() + 
+  theme_bw()
+print(p5)
+
+df_full %>% 
+  filter(Site == "P5" | Site == "P5_creek_cond") %>% 
+  ggplot(aes(x = `Date-Time`, y = Temperature, color = Site)) + 
+  geom_line()
+
+for(num in seq_along(1:5)) {
+  data = manual %>% filter(Location == paste0("P", num) | Location == paste0("C", num))
+  p = ggplot(data, aes(x = Date, y = SPC, color = Location)) + 
+    geom_point() + 
+    geom_line() +
+    labs(title = paste0("SPC Between Creek and Well at Site ", num)) +
+    theme_bw()
+  print(p)
+}
+
+
+
+  

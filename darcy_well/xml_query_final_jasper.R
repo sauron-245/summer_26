@@ -31,7 +31,6 @@ TOP_OF_WELL_LAF <- 0
 TMP_MIN <- -20
 TMP_MAX <- 120
 
-
 # lists every xml in the drive folder and parses the timestamp out of each name
 build_file_index <- function(folder_id) {
   items <- drive_find(q = sprintf("'%s' in parents", folder_id),
@@ -133,16 +132,16 @@ target_hour <- 22            # hour of day (UTC, 0-23) to sample near; 12 = noon
 mode <- "time_window"
 
 # for mode = "time_window":  every measurement between two times on one day
-window_day        <- "2026-07-02"   # "YYYY-MM-DD"
-window_start_hour <- 17              # start hour (UTC, 0-23)
-window_end_hour   <- 19             # end hour (UTC, 0-23)
+window_day        <- "2026-07-23"   # "YYYY-MM-DD"
+window_start_hour <- 0              # start hour (UTC, 0-23)
+window_end_hour   <- 23           # end hour (UTC, 0-23)
 
 # for mode = "day_of_month":
 day_of_month <- 15
 
 # for mode = "date_range":
-range_start <- "2026-06-25"
-range_end   <- "2026-07-02"
+range_start <- "2026-07-01"
+range_end   <- "2026-07-30"
 
 # for mode = "single_day":
 single_day  <- "2026-06-15"
@@ -186,19 +185,19 @@ pick_files <- function() {
 
 picks <- pick_files()
 
-# quick check: what did you actually get?
-cat("selected", nrow(picks), "files\n")
-picks %>% mutate(date = as_date(datetime)) %>% distinct(date) %>% arrange(date) %>% print(n = 50)
-
-# fetch and add depth
-dat <- fetch_and_parse(picks) %>% add_depth()
-
 # well geometry (should be fixed) 
 
 TURNAROUND_LAF  <- 83.5   # lowest point of the well (cable turnaround), in meters along fiber
 TOP_OF_WELL_LAF <- 9      # LAF where the cable enters the top of the well; depth = LAF - this
 TMP_MIN <- -20            # drop physically impossible temperatures
 TMP_MAX <- 120
+
+# quick check: what did you actually get?
+cat("selected", nrow(picks), "files\n")
+picks %>% mutate(date = as_date(datetime)) %>% distinct(date) %>% arrange(date) %>% print(n = 50)
+
+# fetch and add depth
+dat <- fetch_and_parse(picks) %>% add_depth()
 
 
 # folds one profile: splits into down/up legs, converts each to true depth,
@@ -231,7 +230,7 @@ folded <- fold_profile(dat)
 #  Each queried observation gets its own color; solid = cable going down,
 #  dashed = cable coming back up. Overlapping solid/dashed = good symmetry.
 
-plot_data <- folded %>% filter(SHOW_UP_LEG | leg == "down")
+plot_data <- folded %>% filter(leg == "down")
 
 comparison_plot1 <- ggplot(data = plot_data,
                            mapping = aes(TMP, depth_ft, color = label, linetype = leg,
@@ -262,6 +261,5 @@ comparison_plot2 <- ggplot(data = plot_data,
 
 comparison_plot2
 ####pumping test dates march 19 - 27 and startup testing may 4-5####
-
 
 
