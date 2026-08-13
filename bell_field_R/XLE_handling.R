@@ -19,7 +19,7 @@ library(xml2)
 library(XML)
 library(pracma)
 
-setwd("~/GitHub/summer_26/R work")
+setwd("~/GitHub/summer_26/bell_field_R")
 
 ## Data cleaning
 

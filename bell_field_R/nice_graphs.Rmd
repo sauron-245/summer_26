@@ -10,7 +10,7 @@ knitr::opts_chunk$set(fig.width=15, fig.height=8, fig.path='Figs/',
 ```
 
 ```{r}
-setwd("~/GitHub/summer_26/R work")
+setwd("~/GitHub/summer_26/bell_field_R")
 library(tidyverse)
 library(lubridate)
 library(pracma)

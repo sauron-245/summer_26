@@ -132,7 +132,7 @@ target_hour <- 22            # hour of day (UTC, 0-23) to sample near; 12 = noon
 mode <- "time_window"
 
 # for mode = "time_window":  every measurement between two times on one day
-window_day        <- "2026-07-06"   # "YYYY-MM-DD"
+window_day        <- "2026-07-23"   # "YYYY-MM-DD"
 window_start_hour <- 0              # start hour (UTC, 0-23)
 window_end_hour   <- 23           # end hour (UTC, 0-23)
 
@@ -261,6 +261,5 @@ comparison_plot2 <- ggplot(data = plot_data,
 
 comparison_plot2
 ####pumping test dates march 19 - 27 and startup testing may 4-5####
-
 
 

@@ -22,7 +22,7 @@
 # install.packages("lubridate") 
 # install.packages("readxl")
 
-setwd("~/GitHub/summer_26/R work")
+setwd("~/GitHub/summer_26/bell_field_R")
 
 library(tidyverse)
 library(lubridate)
