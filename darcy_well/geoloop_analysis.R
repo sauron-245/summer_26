@@ -31,8 +31,8 @@ geoloop %>%
   theme_bw() 
   # labs(title = "sum bs idk")
 
-ulim = as.POSIXct("2026-06-06 0:00:00")
-llim = as.POSIXct("2026-06-09 0:00:00")
+ulim = as.POSIXct("2026-07-06 0:00:00")
+llim = as.POSIXct("2026-07-07 0:00:00")
 
 P1 = geoloop %>% 
   # filter(date(TIMESTAMP) %in% dates) %>%
@@ -112,7 +112,7 @@ P6 = geoloop %>%
 
 P6 / P1 / P2 / parish_jul6  + plot_layout(axes = "collect")
 
- parish_jul6 / parish_jul23 + plot_layout(axes = "collect")
+ parish_jul6
 
 ggplot(zentra, aes(x = water_level_m, y = water_temp, color = TIMESTAMP)) + 
   geom_jitter() + 
@@ -128,4 +128,11 @@ parish_jun6 = ggplot() +
   theme_bw(base_size = 15) + 
   labs(x = "Date/Time", y = "Water Temp (deg. C)", title = "Obs. Well Temperature (DTS Cable)", color = "Length Along Fiber")
 parish_jun6  
-  
+
+
+dts_x_zentra <- ggplot() + 
+  geom_line(data = zentra, aes(x = TIMESTAMP, y = water_temp, color = "Zentra")) + 
+  geom_line(data = parish %>% filter(depth_m == 22.622), aes(x = dt_cst, y = TMP, color = "DTS")) + 
+  scale_x_datetime(limits = c(llim, ulim)) +
+  theme_bw(base_size = 15)
+dts_x_zentra  

@@ -1,11 +1,13 @@
-##### Instructions: #####                                                          
+#########################################################################################
+# Instructions:                                                          
 # 1. Download all new data from HOBO loggers as .xlsx files                        
 # 2. Drop files into folder 'hobos/hobos_upload'                                         
 # 3. Rename all files using the following conventions:                             
 #     a. piezometers: hobo name alone (e.g. 'P3')                                  
 #     b. creek temp monitors: hobo name plus '_creek' (e.g. P5_creek)              
 #     c. creek conductivity monitors: same as temp plus _cond (e.g. P5_creek_cond) 
-#     d. Downstream monitor: 'Dwnstrm'; Spring: 'Spring'; Midstream: 'Mdstrm'                                            
+#     d. Downstream monitor: 'Dwnstrm'; Spring: 'Spring'; Midstream: 'Mdstrm'
+#     (Check documentation for a map with all filenames annotated!)
 # 4. In body of script, add all filenames in 'hobos/hobos_upload' to the 'hobos_week'      
 #    vector in quotation marks (e.g. hobos_week = c("P1", "P3", "P5_creek")). If you're
 #    updating data for all monitors, change both for loops at the bottom of the script to 
@@ -15,23 +17,28 @@
 #    causing issues. The code is designed to catch several likely issues, and      
 #    may provide information on which site is causing problems in the terminal.     
 # 6. Once code has run without issue, delete all files in 'hobos/hobos_upload'.          
+#########################################################################################
 
 
-##### Comment in if packages have not been installed: #####
+#################################################
+# Comment in if packages have not been installed: 
 # install.packages("tidyverse")
 # install.packages("lubridate") 
 # install.packages("readxl")
+#################################################
 
 setwd("~/GitHub/summer_26/bell_field_R")
-
 library(tidyverse)
 library(lubridate)
 library(readxl)
 
-hobos_all = c("Dwnstrm", "P1", "P1_creek", "P2", "P2_creek", "P3", "Mdstrm", "Spring", "P4", "P4_creek", "P5", "P5_creek", "P5_creek_cond") # Default option for all HOBO monitors. 
+###############################
+# Default option for all HOBOS:
+###############################
+hobos_all <- c("Dwnstrm", "P1", "P1_creek", "P2", "P2_creek", "P3", "Mdstrm", "Spring", "P4", "P4_creek", "P5", "P5_creek", "P5_creek_cond") 
 
-update_hobo_log = function(site) {
-  cols_to_check = c("Date-Time", "Temperature", "Temperature , °C", "Electrical Conductivity", "Specific Conductivity", "Salinity", "Total Dissolved Solids")
+update_hobo_log <- function(site) {
+  cols_to_check <- c("Date-Time", "Temperature", "Temperature , °C", "Electrical Conductivity", "Specific Conductivity", "Salinity", "Total Dissolved Solids")
   
   log_standing <- read_csv(paste0("hobos/hobos_running/", site, "_current.csv")) %>% # Running total of log data
     mutate(`Date-Time` = as.POSIXct(`Date-Time`))
@@ -47,47 +54,69 @@ update_hobo_log = function(site) {
   }
   
   if ("Temperature , °C" %in% names(log_new)){
-    log_new = log_new %>% rename(Temperature = `Temperature , °C`) # Some of the hobos use a different column name for temperature 
+    log_new <- log_new %>% rename(Temperature = `Temperature , °C`) # Some of the hobos use a different column name for temperature 
   }
   
-  date_current_last = as_datetime(log_standing[[nrow(log_standing),1]]) # Last datapoint present in running data log
-  date_new = as_datetime(log_new[[nrow(log_new),1]]) # Last datapoint present in new data
+  date_current_last <- as_datetime(log_standing[[nrow(log_standing),1]]) # Last datapoint present in running data log
+  date_new <- as_datetime(log_new[[nrow(log_new),1]]) # Last datapoint present in new data
 
   if (date_current_last == date_new) { # Checks if running log data are already up to date
     stop(paste0("Most recent date of running log data for site ", site, " matches last date on added data. Have you already merged these dataframes?"))
   } 
 
-  data_to_add = log_new %>%
+  data_to_add <- log_new %>%
     filter(`Date-Time` > date_current_last) %>% # selects only data not present in running logs
-    filter(Temperature > 0) # Catches some points collected when the monitor was removed from the well during winter
-  log_standing_updated = rbind(log_standing, data_to_add) # Attach new data
-  log_standing_updated = log_standing_updated %>% 
+    filter(Temperature > 0, Temperature < 30) # Catches some points collected when the monitor was out of the well
+  log_standing_updated <- rbind(log_standing, data_to_add) # Attach new data
+  log_standing_updated <- log_standing_updated %>% 
     mutate(`Date-Time` = format(`Date-Time`, "%Y-%m-%d %H:%M:%S")) # Ensure date-time is correctly formatted
   rm(list = c("data_to_add", "log_standing", "log_new")) # Clean up temp files
   
   write_csv(log_standing_updated, paste0("hobos/hobos_running/", site, "_current.csv")) 
 }
-##### Edit this vector if NOT updating all hobo logs: #####
-hobos_week = c("P5")
 
-##### Modify this line if not using 'hobos-all': #####
+
+###########################################################################################################
+# By default, this script updates all running hobo data.
+# In order to target updates to specific files, (for instance, if you missed a hobo in the field),
+# replace 'hobos_all' with a vector containing just the sites of interest (e.g. c("P1", "P3", "P5_creek")).
+# Modifying 'hobos-week' is the easiest way to do this.
+###########################################################################################################
+
+#################################################
+# Edit this vector if NOT updating all hobo logs:
+#################################################
+
+hobos_week <- c("P5")
+
+
+##########################################################################
+# If not using 'hobos_all', change this line to iterate over 'hobos_week':
+##########################################################################
+
 for (hobo in hobos_all) {
   update_hobo_log(hobo)
 }
 
-## By default, the above for loop updates all running hobo data. In order to target updates to specific files, (for instance, if you missed a hobo in the field),
-## replace 'hobos_all' with a vector containing just the sites of interest (e.g. c("P1", "P3", "P5_creek")). Modifying 'hobos-week' is the easiest way to do this.
 
-check_csv = function(site) { # Use this to make graphs of temperature over time. Intended to check that dates/expected data gaps are behaving as they ought. 
-  file = read_csv(paste0("hobos/hobos_running/", site, "_current.csv")) 
-  p = file %>% 
+check_csv <- function(site) { 
+  file <- read_csv(paste0("hobos/hobos_running/", site, "_current.csv")) 
+  p <- file %>% 
   ggplot(aes(x = `Date-Time`, y = `Temperature`)) +
     geom_line() + 
-    labs(title = paste0("Temperature at ", site, " from ", min(file$`Date-Time`), " to ", max(file$`Date-Time`)))
+    labs(title = paste0("Temperature at ", site, " from ", min(file$`Date-Time`), " to ", max(file$`Date-Time`)),
+         x = "Date/Time", y = "Temperature (deg. C)") +
+    theme_minimal(base_size = 15)
   print(p)
   }
 
-##### Modify this line if not using 'hobos-all': #####
+
+#################################################################################################################################################
+# This next code makes graphs of temperature at all locations; this is useful to identify data outages and make sure that all files were actually
+# updated correctly. Run the next line, then look through the graphs to double-check all sites. (Hint: look at the last timestamp in the title! It
+# should correspond with the time you pulled the hobo in the field.)
+#################################################################################################################################################
+
 for (hobo in hobos_all) {
   check_csv(hobo)
 }
