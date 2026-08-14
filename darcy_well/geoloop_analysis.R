@@ -2,6 +2,7 @@ library(tidyverse)
 library(readxl)
 library(lubridate)
 library(patchwork)
+library(RColorBrewer)
 
 geoloop = read_excel("geoloop.xlsx") %>% 
   mutate(TIMESTAMP = as_datetime(TIMESTAMP), GeoloopToBldgT = (GeoloopToBldgT - 32) * 5/9, GeoloopFromBldgT = (GeoloopFromBldgT - 32) * 5/9) %>% 
@@ -17,66 +18,124 @@ parish = read_csv("parish_dts_xdepth.csv") %>%
 parish_pre <- read_csv("pre_op.csv")%>% 
   mutate(dt_cst = datetime - hours(3))
 
-geoloop %>% 
-  # mutate(diff = GeoloopToBldgT - GeoloopFromBldgT) %>% 
-  filter(date(TIMESTAMP) == "2026-07-16") %>%
-  ggplot() +
-  # geom_line(aes(x = TIMESTAMP, y = VFDFreq * 2, color = 'VFD Freq')) +
-  geom_line(aes(x = TIMESTAMP, y = GeoloopFromBldgT, color = 'Loop `from` building temp')) +
-  geom_line(aes(TIMESTAMP, GeoloopToBldgT, color = 'Loop `to` building temp')) +
-  # geom_line(aes(TIMESTAMP, GeoloopGPM, color = 'Flow rate (GPM)'), size =  0.5) +
-  # geom_smooth(aes(TIMESTAMP, GeoloopGPM /2, color = 'Flow rate (GPM)'), method = "gam", se = FALSE) +
-  # geom_hline(yintercept = 0) +
-  # scale_y_continuous(sec.axis = sec_axis(~. / 2)) +
-  theme_bw() 
-  # labs(title = "sum bs idk")
 
-ulim = as.POSIXct("2026-07-06 0:00:00")
-llim = as.POSIXct("2026-07-08 0:00:00")
+my_pal = brewer.pal(n = 11, name = "Spectral")
 
-P1 = geoloop %>% 
-  # filter(date(TIMESTAMP) %in% dates) %>%
-  # filter(TIMESTAMP <= ulim1, TIMESTAMP >= llim1) %>%
-  ggplot() + 
+shade_periods <- geoloop %>%
+  arrange(TIMESTAMP) %>%
+  mutate(
+    shaded = VFDFreq == 30,
+    grp = cumsum(shaded != lag(shaded, default = first(shaded)))
+  ) %>%
+  filter(shaded) %>%
+  group_by(grp) %>%
+  summarize(
+    start = min(TIMESTAMP),
+    end = max(TIMESTAMP),
+    .groups = "drop"
+  )
+
+llim1 = as.POSIXct("2026-07-06 0:00:00")
+ulim1 = as.POSIXct("2026-07-09 0:00:00")
+llim2 = as.POSIXct("2026-07-23 0:00:00")
+ulim2 = as.POSIXct("2026-07-26 0:00:00")
+
+
+
+
+
+P1 =
+  ggplot(geoloop) + 
   geom_line(aes(x = TIMESTAMP, y = GeoloopToBldgT), linewidth = 1) +
-  theme_bw(base_size = 15) + 
-  scale_x_datetime(limits = c(llim, ulim)) +
+  annotate(
+    geom = "rect",
+    xmin = llim1,
+    xmax = ulim1,
+    ymin = -Inf,
+    ymax = Inf,
+    fill = "red",
+    alpha = 0.2
+  ) +
+  annotate(
+    geom = "rect",
+    xmin = llim2,
+    xmax = ulim2,
+    ymin = -Inf,
+    ymax = Inf,
+    fill = "red",
+    alpha = 0.2
+  ) +
+  geom_rect(data = shade_periods, aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf), fill = "lightblue1", alpha = 0.4) +
+  theme_bw(base_size = 15) +
+  # scale_x_datetime(limits = c(llim, ulim)) +
   labs(title = "Production Well Return Water Temperature", x = "Date", y = "Water Temp (Deg. C)")
 
-P4 = geoloop %>% 
-  # filter(date(TIMESTAMP) %in% dates) %>%
-  # filter(TIMESTAMP <= ulim1, TIMESTAMP >= llim1) %>%
-  ggplot() + 
+P4 =
+  ggplot(geoloop) + 
   geom_line(aes(x = TIMESTAMP, y = GeoloopGPM), linewidth = 1) +
-  scale_x_datetime(limits = c(llim, ulim)) +
+  geom_rect(data = shade_periods, aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf), fill = "lightblue1", alpha = 0.4) +
+  # scale_x_datetime(limits = c(llim, ulim)) +
   theme_bw(base_size = 15) +
   labs(title = "Geoloop Flow Rate", x = "Date", y = "Flow Rate (GPM")
 
-P2 = zentra %>% 
-  # filter(date(TIMESTAMP) %in% dates) %>%
-  # filter(TIMESTAMP <= ulim1, TIMESTAMP >= llim1) %>%
-  ggplot(aes(x = TIMESTAMP, y = water_level_m)) + 
-  geom_line(linewidth = 1) +
+P2 = 
+  ggplot(zentra) + 
+  geom_line(aes(x = TIMESTAMP, y = water_level_m), linewidth = 1) +
+  annotate(
+    geom = "rect",
+    xmin = llim1,
+    xmax = ulim1,
+    ymin = -Inf,
+    ymax = Inf,
+    fill = "red",
+    alpha = 0.2
+  ) +
+  annotate(
+    geom = "rect",
+    xmin = llim2,
+    xmax = ulim2,
+    ymin = -Inf,
+    ymax = Inf,
+    fill = "red",
+    alpha = 0.2
+  ) +
+  geom_rect(data = shade_periods, aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf), fill = "lightblue1", alpha = 0.4) +
   # geom_smooth(method = 'gam', se = FALSE, color = 'blue', formula = y ~ s(x, k = 40, bs = "cs")) +
-  scale_x_datetime(limits = c(llim, ulim)) +
+  # scale_x_datetime(limits = c(llim, ulim)) +
   theme_bw(base_size = 15) +
   labs(title = "Observation Well Water Height", x = "Date", y = "Water Height (M)")
 
-P3 = zentra %>% 
-  # filter(date(TIMESTAMP) %in% dates) %>%
-  # filter(TIMESTAMP <= ulim1, TIMESTAMP >= llim1) %>%
-  ggplot(aes(x = TIMESTAMP, y  = water_temp)) + 
-  geom_line(linewidth = 1) +
+P3 =
+  ggplot(zentra) + 
+  geom_line(aes(x = TIMESTAMP, y  = water_temp), linewidth = 1) +
+  annotate(
+    geom = "rect",
+    xmin = llim1,
+    xmax = ulim1,
+    ymin = -Inf,
+    ymax = Inf,
+    fill = "red",
+    alpha = 0.2
+  ) +
+  annotate(
+    geom = "rect",
+    xmin = llim2,
+    xmax = ulim2,
+    ymin = -Inf,
+    ymax = Inf,
+    fill = "red",
+    alpha = 0.2
+  ) +
+  geom_rect(data = shade_periods, aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf), fill = "lightblue1", alpha = 0.4) +
   # geom_smooth(method = 'gam', se = FALSE, color = 'blue', formula = y ~ s(x, k = 40, bs = "cs")) +
-  scale_x_datetime(limits = c(llim, ulim)) +
+  # scale_x_datetime(limits = c(llim, ulim)) +
   theme_bw(base_size = 15) +
   labs(title = "Observation Well Water Temperature", x = "Date", y = "Water Temp (Deg. C)")
 
-P7 = zentra %>% 
-  # filter(date(TIMESTAMP) %in% dates) %>%
-  # filter(TIMESTAMP <= ulim1, TIMESTAMP >= llim1) %>%
-  ggplot(aes(x = TIMESTAMP, y  = spc)) + 
-  geom_line(linewidth = 1) +
+P7 = 
+  ggplot(zentra) + 
+  geom_line(aes(x = TIMESTAMP, y  = spc), linewidth = 1) +
+  geom_rect(data = shade_periods, aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf), fill = "lightblue1", alpha = 0.4) +
   scale_x_datetime(limits = c(llim, ulim)) +
   # geom_smooth(method = 'gam', se = FALSE, color = 'blue', formula = y ~ s(x, k = 40, bs = "cs")) +
   theme_bw(base_size = 15) +
@@ -89,7 +148,8 @@ parish_jul6 = ggplot() +
   geom_line(data = parish %>% filter(depth_m == 68.632), aes(x = dt_cst, y = TMP, color = 'Depth = 225 ft.'), linewidth = 1) +
   scale_x_datetime(limits = c(llim, ulim)) +
   theme_bw(base_size = 15) + 
-  scale_color_manual(breaks = c("Depth = 75 ft.", "Depth = 125 ft.", "Depth = 175 ft.", "Depth = 225 ft."), values = c("skyblue", "goldenrod", "dodgerblue4", "tomato3")) +
+  scale_color_manual(breaks = c("Depth = 75 ft.", "Depth = 125 ft.", "Depth = 175 ft.", "Depth = 225 ft."), values = my_pal[8:11]) +
+  geom_rect(data = shade_periods, aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf), fill = "lightblue1", alpha = 0.4) +
   labs(x = "Date", y = "Water Temp (deg. C)", title = "Obs. Well Temperature (DTS Cable)", color = "Length Along Fiber")
 
 parish_jul23 = ggplot() + 
@@ -99,20 +159,14 @@ parish_jul23 = ggplot() +
   geom_line(data = parish %>% filter(depth_m == 68.632), aes(x = dt_cst, y = TMP, color = 'Depth = 225 ft.'), linewidth = 1) +
   scale_x_datetime(limits = c(llim, ulim)) +
   theme_bw(base_size = 15) + 
-  scale_color_manual(breaks = c("Depth = 75 ft.", "Depth = 125 ft.", "Depth = 175 ft.", "Depth = 225 ft."), values = c("skyblue", "goldenrod", "dodgerblue4", "tomato3")) +
-    labs(x = "Date", y = "Water Temp (deg. C)", title = "Obs. Well Temperature (DTS Cable)", color = "Length Along Fiber")
+  scale_color_manual(breaks = c("Depth = 75 ft.", "Depth = 125 ft.", "Depth = 175 ft.", "Depth = 225 ft."), values = my_pal[8:11]) +
+  geom_rect(data = shade_periods, aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf), fill = "lightblue1", alpha = 0.4) +
+  labs(x = "Date", y = "Water Temp (deg. C)", title = "Obs. Well Temperature (DTS Cable)", color = "Length Along Fiber")
 
 
-P6 = geoloop %>% 
-  # filter(date(TIMESTAMP) %in% dates) %>%
-  # filter(TIMESTAMP <= ulim1, TIMESTAMP >= llim1) %>%
-  ggplot() + 
-  geom_line(aes(x = TIMESTAMP, y = VFDFreq), linewidth = 1) +
-  scale_x_datetime(limits = c(llim, ulim)) +
-  theme_bw(base_size = 15) +
-  labs(title = "Production Well Pump Frequency", x = "Date", y = "Signal Frequency")
+P1 / P3 / P2 + plot_layout(axes = "collect")
 
-P6 / P2 / P3 / parish_jul6  + plot_layout(axes = "collect")
+P2
 
 parish_jul6
 

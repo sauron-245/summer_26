@@ -60,9 +60,9 @@ update_hobo_log <- function(site) {
   date_current_last <- as_datetime(log_standing[[nrow(log_standing),1]]) # Last datapoint present in running data log
   date_new <- as_datetime(log_new[[nrow(log_new),1]]) # Last datapoint present in new data
 
-  if (date_current_last == date_new) { # Checks if running log data are already up to date
-    stop(paste0("Most recent date of running log data for site ", site, " matches last date on added data. Have you already merged these dataframes?"))
-  } 
+  # if (date_current_last == date_new) { # Checks if running log data are already up to date
+  #   stop(paste0("Most recent date of running log data for site ", site, " matches last date on added data. Have you already merged these dataframes?"))
+  # } 
 
   data_to_add <- log_new %>%
     filter(`Date-Time` > date_current_last) %>% # selects only data not present in running logs
