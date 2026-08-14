@@ -51,7 +51,7 @@ CleanData = function(df){
     diff_val <- df_hampel$height_above[i - 1] - df_hampel$height_above[i]
     
     # detect start of a new erroneous block
-    if (diff_val > 0.15 && !in_block) { # This is the best threshold for incorrect logger placement I've found for now -- basically, if there's a jump in water level of more than 
+    if (diff_val > 0.15 && !in_block) { # This is the best threshold for incorrect logger placement I've found for now -- if there's a change in water level of more than 
                                        # 0.15 meters, the loop goes into error correction mode and starts applying a correction to all following erroneous datapoints.
                                        # Adjust if it starts correcting drops caused by actual change in water level. Maybe adjust to percent change?
       correction <- diff_val   # lock in the correction for this block
