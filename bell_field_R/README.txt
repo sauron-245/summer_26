@@ -14,12 +14,14 @@ I decided it would be best to maintain ‘running’ logs of all available data,
 
 - Source the code, let it format and append the new data, then check that everything came out correctly by looking at the graphs it spits out at the end.
 
+- Delete all uploaded HOBO files in 'hobos/hobos_upload' EXCEPT for the .txt file (important that the .txt stays!!).
+
 All the instructions and code to edit are highlighted in the script outline! This should be used every time anyone downloads data from the hobos.
 The script drops the formatted files into a folder called ‘hobos_running’, from where they can be exported/referenced/etc. I’ve been copying all the formatted files
 into a data backup folder stored next door in case anything goes wrong with the data for whatever reason.
 
 Hobo files should be named using the following conventions:
-- Piezometers: 'P1', 'P2', 'P3', 'P4', and 'P5'
+- Piezometer conductivity sensors: 'P1', 'P2', 'P3', 'P4', and 'P5'
 - Creek temperature sensors: 'P1_creek', 'P2_creek', 'P4_creek,' and 'P5_creek'
 - Creek conductivity sensors: 'Dwnstrm' (downstream of P1), 'Mdstrm' (downstream of P3), 'Spring' (in the spring), and 'P5_creek_cond' (in the creek next to P5)
 

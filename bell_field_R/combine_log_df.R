@@ -1,6 +1,6 @@
 #########################################################################################
 # Instructions:                                                          
-# 1. Download all new data from HOBO loggers as .xlsx files                        
+# 1. Download all new data from HOBO loggers as .xlsx files 
 # 2. Drop files into folder 'hobos/hobos_upload'                                         
 # 3. Rename all files using the following conventions:                             
 #     a. piezometers: hobo name alone (e.g. 'P3')                                  
