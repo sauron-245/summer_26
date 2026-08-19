@@ -23,7 +23,8 @@ into a data backup folder stored next door in case anything goes wrong with the 
 Hobo files should be named using the following conventions:
 - Piezometer conductivity sensors: 'P1', 'P2', 'P3', 'P4', and 'P5'
 - Creek temperature sensors: 'P1_creek', 'P2_creek', 'P4_creek,' and 'P5_creek'
-- Creek conductivity sensors: 'Dwnstrm' (downstream of P1), 'Mdstrm' (downstream of P3), 'Spring' (in the spring), and 'P5_creek_cond' (in the creek next to P5)
+- Creek conductivity sensors: 'Dwnstrm' (downstream of P1), 'Mdstrm' (downstream of P3), 'Spring' (in the spring), and 'P5_creek_cond' (in the creek next to P5).
+  NOTE: hobo 'C5 creek' -> P5_creek_cond, hobo 'P5C2' -> P5_creek. All the other ones have pretty self-evident names.
 
 
 INSTRUCTIONS -- xle_handling.R
