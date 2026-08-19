@@ -6,15 +6,18 @@ library(RColorBrewer)
 
 geoloop = read_excel("geoloop.xlsx") %>% 
   mutate(TIMESTAMP = as_datetime(TIMESTAMP), GeoloopToBldgT = (GeoloopToBldgT - 32) * 5/9, GeoloopFromBldgT = (GeoloopFromBldgT - 32) * 5/9) %>% 
-  filter(GeoloopToBldgT <= 20)
+  filter(GeoloopToBldgT <= 20) %>% 
+  mutate(datetime_round = round_date(TIMESTAMP, "15 mins"))
 zentra = read_csv("zentra.csv") %>% 
   rename(TIMESTAMP = `z6-22205`, water_level_m = `Port1...2`, water_temp = `Port1...3`, spc = `Port1...4`) %>% 
   mutate(water_level_m = as.numeric(water_level_m) / 1000, water_temp = as.numeric(water_temp), TIMESTAMP = mdy_hms(TIMESTAMP), spc = as.numeric(spc) * 1000) %>% 
   slice(3:n()) %>% 
   select(1:4) %>% 
-  filter(TIMESTAMP >= "2026-06-30 00:01:00", TIMESTAMP <= "2026-07-27 23:59:00")
+  filter(TIMESTAMP >= "2026-06-30 00:01:00", TIMESTAMP <= "2026-07-27 23:59:00")%>% 
+  mutate(datetime_round = round_date(TIMESTAMP, "15 mins"))
 parish = read_csv("parish_dts_xdepth.csv") %>% 
-  mutate(dt_cst = datetime - hours(3))
+  mutate(dt_cst = datetime - hours(3))%>% 
+  mutate(datetime_round = round_date(dt_cst, "15 mins"))
 parish_pre <- read_csv("pre_op.csv")%>% 
   mutate(dt_cst = datetime - hours(3))
 
@@ -45,7 +48,7 @@ ulim2 = as.POSIXct("2026-07-26 0:00:00")
 
 
 P1 =
-  ggplot(geoloop) + 
+  ggplot(df_full1) + 
   geom_line(aes(x = TIMESTAMP, y = GeoloopToBldgT), linewidth = 1) +
   annotate(
     geom = "rect",
@@ -71,7 +74,7 @@ P1 =
   labs(title = "Production Well Return Water Temperature", x = "Date", y = "Water Temp (Deg. C)")
 
 P4 =
-  ggplot(geoloop) + 
+  ggplot(df_full1) + 
   geom_line(aes(x = TIMESTAMP, y = GeoloopGPM), linewidth = 1) +
   geom_rect(data = shade_periods, aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf), fill = "lightblue1", alpha = 0.4) +
   # scale_x_datetime(limits = c(llim, ulim)) +
@@ -79,7 +82,7 @@ P4 =
   labs(title = "Geoloop Flow Rate", x = "Date", y = "Flow Rate (GPM")
 
 P2 = 
-  ggplot(zentra) + 
+  ggplot(df_full1) + 
   geom_line(aes(x = TIMESTAMP, y = water_level_m), linewidth = 1) +
   annotate(
     geom = "rect",
@@ -106,7 +109,7 @@ P2 =
   labs(title = "Observation Well Water Height", x = "Date", y = "Water Height (M)")
 
 P3 =
-  ggplot(zentra) + 
+  ggplot(df_full1) + 
   geom_line(aes(x = TIMESTAMP, y  = water_temp), linewidth = 1) +
   annotate(
     geom = "rect",
@@ -133,7 +136,7 @@ P3 =
   labs(title = "Observation Well Water Temperature", x = "Date", y = "Water Temp (Deg. C)")
 
 P7 = 
-  ggplot(zentra) + 
+  ggplot(df_full1) + 
   geom_line(aes(x = TIMESTAMP, y  = spc), linewidth = 1) +
   geom_rect(data = shade_periods, aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf), fill = "lightblue1", alpha = 0.4) +
   scale_x_datetime(limits = c(llim, ulim)) +
@@ -193,3 +196,11 @@ dts_x_zentra <- ggplot() +
   scale_x_datetime(limits = c(llim, ulim)) +
   theme_bw(base_size = 15)
 dts_x_zentra  
+
+
+
+df_full <- zentra %>% full_join(parish, by = "datetime_round")
+df_full <- df_full %>% full_join(geoloop, by = "datetime_round")  
+df_full1 <- df_full %>% select(-c(1, 18, 19, 20, 21))
+
+write_csv(df_full1, "darcy_data_ALL.csv")
