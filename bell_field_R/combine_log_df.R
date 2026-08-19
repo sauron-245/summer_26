@@ -60,17 +60,20 @@ update_hobo_log <- function(site) {
   date_current_last <- as_datetime(log_standing[[nrow(log_standing),1]]) # Last datapoint present in running data log
   date_new <- as_datetime(log_new[[nrow(log_new),1]]) # Last datapoint present in new data
 
-  # if (date_current_last == date_new) { # Checks if running log data are already up to date
-  #   stop(paste0("Most recent date of running log data for site ", site, " matches last date on added data. Have you already merged these dataframes?"))
-  # } 
+  if (date_current_last == date_new) { # Checks if running log data are already up to date
+    message(paste0("Skipping site ", site, ". It appears this dataframe is already up to date."))
+    log_standing_updated <- log_standing
+  }
 
-  data_to_add <- log_new %>%
-    filter(`Date-Time` > date_current_last) %>% # selects only data not present in running logs
-    filter(Temperature > 0, Temperature < 30) # Catches some points collected when the monitor was out of the well
-  log_standing_updated <- rbind(log_standing, data_to_add) # Attach new data
-  log_standing_updated <- log_standing_updated %>% 
-    mutate(`Date-Time` = format(`Date-Time`, "%Y-%m-%d %H:%M:%S")) # Ensure date-time is correctly formatted
-  rm(list = c("data_to_add", "log_standing", "log_new")) # Clean up temp files
+  if (date_current_last != date_new) {
+    data_to_add <- log_new %>%
+      filter(`Date-Time` > date_current_last) %>% # selects only data not present in running logs
+      filter(Temperature > 0, Temperature < 30) # Catches some points collected when the monitor was out of the well
+    log_standing_updated <- rbind(log_standing, data_to_add) # Attach new data
+    log_standing_updated <- log_standing_updated %>% 
+      mutate(`Date-Time` = format(`Date-Time`, "%Y-%m-%d %H:%M:%S")) # Ensure date-time is correctly formatted
+    rm(list = c("data_to_add", "log_standing", "log_new")) # Clean up temp files
+  }
   
   write_csv(log_standing_updated, paste0("hobos/hobos_running/", site, "_current.csv")) 
 }

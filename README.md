@@ -7,7 +7,7 @@ This repo is divided into 4 subfolders:
 
 - /darcy_well: everything having to do with the Darcy Solutions production well at Parish House, including dataframes from Carleton and Darcy and several graphs
 
-- /summer 26: Jupyter labs/Conda environment for graphing and analysis in Python
+- /summer 2026: Jupyter labs/Conda environment for graphing and analysis in Python
 
 The work we did this summer is exhaustively documented in this Google Doc: https://docs.google.com/document/d/15TK-YF1qSq_6X7Ow4fchxYOsFYGObm1bBxFyvbVWrug/edit?tab=t.0.
 We suggest starting here with any questions about data collection, organization, or interpretation. Most scripts in this repo are carefully commented and/or have dedicated
