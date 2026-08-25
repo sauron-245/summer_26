@@ -1,8 +1,8 @@
 ############################################################
-#  Darcy Well (Parish) — INTERACTIVE DASHBOARD (Shiny)
+#  Darcy Well — INTERACTIVE DASHBOARD (Shiny)
 #
 #  HOW TO RUN:
-#   1. Run the SETUP + FETCH SETTINGS block below (edit what to pull).
+#   1. Run the SETUP + FETCH SETTINGS block below (edit what you want the app to pull).
 #   2. It downloads and parses the selected files once.
 #   3. The app launches — toggle observations, legs, depth units, etc. instantly.
 ############################################################
@@ -19,18 +19,18 @@ library(plotly)
 
 
 ############################################################
-#  FIXED WELL SETTINGS
+#  FIXED WELL SETTINGS (shouldn't need to touch)
 ############################################################
 
 FOLDER_ID       <- "1wQGImxaQGcEA_156JJBwIDPLrG86JfZQ"
 TURNAROUND_LAF  <- 83.5   # lowest point of the well (cable turnaround), m along fiber
-TOP_OF_WELL_LAF <- 9      # LAF where the cable enters the top of the well
-TMP_MIN <- -20
-TMP_MAX <- 120
+TOP_OF_WELL_LAF <- 8      # LAF where the cable enters the top of the well
+TMP_MIN <- -10
+TMP_MAX <- 100
 
 
 ############################################################
-#  FUNCTIONS
+#  FUNCTIONS (shouldn't need to touch)
 ############################################################
 
 build_file_index <- function(folder_id) {
@@ -113,18 +113,18 @@ fold_profile <- function(df) {
 #    "single_day"   every observation on one day
 ############################################################
 
-fetch_mode <- "date_range"
+fetch_mode <- "single day"
 
-target_hour <- 22            # hour (UTC) to sample near, for the thinning modes
+target_hour <- 18            # hour (UTC) to sample near, for the thinning modes
 
 # time_window:
-window_day        <- "2026-07-01"
+window_day        <- "2026-07-07"
 window_start_hour <- 17
 window_end_hour   <- 19
 
 # date_range:
-range_start <- "2026-07-01"
-range_end   <- "2026-07-27"
+range_start <- "2026-07-07"
+range_end   <- "2026-07-07"
 
 # nth_of_month:
 nth_day      <- 15
@@ -132,10 +132,10 @@ nth_start    <- "2025-11-01"
 nth_end      <- "2026-07-31"
 
 # single_day:
-single_day  <- "2026-06-04"
+single_day  <- "2026-07-07"
 
 ############################################################
-#  ======== (you shouldn't need to edit below) ========
+# (you shouldn't need to edit below)
 ############################################################
 
 select_files <- function(index) {
